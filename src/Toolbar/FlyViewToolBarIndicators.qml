@@ -27,7 +27,7 @@ Item {
                 anchors.top:        parent.top
                 anchors.bottom:     parent.bottom
                 source:             modelData
-                visible:            item.showIndicator
+                visible:            item && item.showIndicator
             }
         }
 
@@ -39,7 +39,8 @@ Item {
                 anchors.top:        parent.top
                 anchors.bottom:     parent.bottom
                 source:             modelData
-                visible:            item.showIndicator
+                visible:            item && item.showIndicator && !modelData.toString().includes("VehicleGPSIndicator") && !modelData.toString().includes("BatteryIndicator")
+                width:              visible ? (item ? item.width : implicitWidth) : 0
             }
         }
     }

@@ -626,6 +626,56 @@ Item {
                         Layout.alignment: Qt.AlignTop
                         spacing: ScreenTools.defaultFontPixelHeight * 0.4
 
+                        // Mobile Version & Brand Header Strip (Always visible on mobile displays)
+                        RowLayout {
+                            Layout.fillWidth: true
+                            visible: root.isMobileView
+                            spacing: ScreenTools.defaultFontPixelWidth * 0.8
+
+                            Text {
+                                text: qsTr("IRS GCS v%1").arg(root.currentAppVersionName)
+                                font.bold: true
+                                font.pixelSize: ScreenTools.defaultFontPixelHeight * 0.44
+                                color: "#F0DE2A"
+                            }
+
+                            Text {
+                                text: "•"
+                                font.pixelSize: ScreenTools.defaultFontPixelHeight * 0.42
+                                color: "#475569"
+                            }
+
+                            Text {
+                                text: qsTr("Nextkick Aerospace")
+                                font.pixelSize: ScreenTools.defaultFontPixelHeight * 0.40
+                                color: "#64748B"
+                            }
+
+                            Item { Layout.fillWidth: true }
+
+                            Text {
+                                text: qsTr("Check Updates")
+                                font.pixelSize: ScreenTools.defaultFontPixelHeight * 0.40
+                                font.underline: true
+                                color: "#38BDF8"
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        statusBanner.bannerType = 1
+                                        statusBanner.text = qsTr("Checking for updates...")
+                                        root.checkForAppUpdate(function(hasUpdate, info, msg) {
+                                            if (!hasUpdate) {
+                                                statusBanner.bannerType = 1
+                                                statusBanner.text = qsTr("IRS GCS is up to date (v%1).").arg(root.currentAppVersionName)
+                                            }
+                                        })
+                                    }
+                                }
+                            }
+                        }
+
                         // ----------------------------------------------------
                         // Top Navigation Tab Bar
                         // ----------------------------------------------------

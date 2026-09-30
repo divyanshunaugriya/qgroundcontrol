@@ -563,12 +563,22 @@ Item {
             model: toolStripActionList.model
         }
 
-        MapScale {
+        Row {
             anchors.margins: _toolsMargin
             anchors.left: toolStrip.right
             anchors.top: parent.top
-            mapControl: editorMap
-            autoHide: true
+            spacing: _toolsMargin
+
+            MapScale {
+                anchors.verticalCenter: parent.verticalCenter
+                mapControl: editorMap
+                autoHide: true
+            }
+
+            MapCoordinateDisplay {
+                anchors.verticalCenter: parent.verticalCenter
+                mapControl: editorMap
+            }
         }
 
         PlanViewRightPanel {

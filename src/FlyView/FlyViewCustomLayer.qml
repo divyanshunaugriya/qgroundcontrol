@@ -38,4 +38,58 @@ Item {
         bottomEdgeCenterInset:  parentToolInsets.bottomEdgeCenterInset
         bottomEdgeRightInset:   parentToolInsets.bottomEdgeRightInset
     }
+
+    // Dynamic Hot-Reload Live Overlay Loader
+    Item {
+        id: dynamicLiveUiContainer
+        anchors.fill: parent
+
+        readonly property string uiDir: "/sdcard/Android/data/com.irs.irsgcs/files/live_ui/"
+        property bool useSlotB: false
+
+        Loader {
+            id: dynamicLoader
+            anchors.fill: parent
+            asynchronous: false
+
+            function reload() {
+                useSlotB = !useSlotB
+                var target = "file://" + uiDir + (useSlotB ? "LiveFlyOverlay_B.qml" : "LiveFlyOverlay_A.qml")
+                dynamicLoader.source = ""
+                dynamicLoader.source = target
+            }
+        }
+
+        // Tap-to-reload discrete pill in top-right corner
+        Rectangle {
+            width: 24
+            height: 24
+            radius: 12
+            color: dynamicLoader.status === Loader.Ready ? "#3300E676" : "#22FFFFFF"
+            border.color: "#44FFFFFF"
+            border.width: 1
+            anchors.top: parent.top
+            anchors.right: parent.right
+            anchors.margins: 6
+            opacity: 0.4
+            z: 9999
+
+            Text {
+                anchors.centerIn: parent
+                text: "⚡"
+                font.pixelSize: 12
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                onClicked: dynamicLoader.reload()
+            }
+        }
+
+        Component.onCompleted: {
+            var target = "file://" + uiDir + "LiveFlyOverlay_A.qml"
+            dynamicLoader.source = target
+        }
+    }
+    // standard placeholder custom overlay
 }

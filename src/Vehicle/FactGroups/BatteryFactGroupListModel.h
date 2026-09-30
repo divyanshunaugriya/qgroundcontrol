@@ -57,6 +57,12 @@ private:
     void _handleHighLatency(Vehicle *vehicle, const mavlink_message_t &message);
     void _handleHighLatency2(Vehicle *vehicle, const mavlink_message_t &message);
     void _handleBatteryStatus(Vehicle *vehicle, const mavlink_message_t &message);
+    void _handleSysStatus(Vehicle *vehicle, const mavlink_message_t &message);
+
+    static double calculateBatteryPercent(double totalVoltage, bool isArmed, double mahConsumed = -1.0);
+    static double calculateLipoPercent(double totalVoltage);
+    static int detectLipoCellCount(double voltage);
+    static double calculateLipoPercentFromCellVoltage(double vCell);
 
     Fact _batteryFunctionFact = Fact(0, QStringLiteral("batteryFunction"), FactMetaData::valueTypeUint8);
     Fact _batteryTypeFact = Fact(0, QStringLiteral("batteryType"), FactMetaData::valueTypeUint8);

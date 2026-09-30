@@ -19,6 +19,9 @@ qt_add_qml_module(QGroundControlModule
     QML_FILES
         MainWindow/MainWindow.qml
         MainWindow/MainWindowSavedState.qml
+        MainWindow/LoginPage.qml
+        MainWindow/IrsSplashScreen.qml
+        MainWindow/IrsHubPage.qml
     IMPORTS
         QGC
     NO_PLUGIN

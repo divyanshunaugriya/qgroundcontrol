@@ -46,7 +46,7 @@ Item {
     readonly property string gotoTitle:                     qsTr("Go To Location")
     readonly property string roiTitle:                      qsTr("ROI")
     readonly property string setHomeTitle:                  qsTr("Set Home")
-    readonly property string setEstimatorOriginTitle:       qsTr("Set Estimator Origin")
+    readonly property string setEstimatorOriginTitle:       qsTr("Set Drone / VIO Origin")
     readonly property string setFlightMode:                 qsTr("Set Flight Mode")
     readonly property string changeHeadingTitle:            qsTr("Change Heading")
 
@@ -75,7 +75,7 @@ Item {
     readonly property string mvPauseMessage:                    qsTr("Pause selected vehicles at their current position")
     readonly property string roiMessage:                        qsTr("Make the specified location a Region Of Interest")
     readonly property string setHomeMessage:                    qsTr("Set vehicle home as the specified location. This will affect Return to Home position")
-    readonly property string setEstimatorOriginMessage:         qsTr("Make the specified location the estimator origin")
+    readonly property string setEstimatorOriginMessage:         qsTr("Send initial global coordinates (Lat/Lon) to Drone and VIO system (Sets Estimator Origin)")
     readonly property string setFlightModeMessage:              qsTr("Set the vehicle flight mode to %1").arg(_actionData)
     readonly property string changeHeadingMessage:              qsTr("Set the vehicle heading towards the specified location")
 
@@ -140,7 +140,7 @@ Item {
     property bool showLandAbort:            _guidedActionsEnabled && _vehicleFlying && _fixedWingOnApproach
     property bool showGotoLocation:         _guidedActionsEnabled && _vehicleFlying
     property bool showSetHome:              _guidedActionsEnabled
-    property bool showSetEstimatorOrigin:   _activeVehicle && !(_activeVehicle.sensorsPresentBits & MAVLinkEnums.MAV_SYS_STATUS_SENSOR_GPS)
+    property bool showSetEstimatorOrigin:   _activeVehicle && !_vehicleFlying
     property bool showChangeHeading:        _guidedActionsEnabled && _vehicleFlying
 
     property string changeSpeedTitle:   _vehicleInFwdFlight ? changeAirspeedTitle : changeCruiseSpeedTitle
@@ -680,6 +680,7 @@ Item {
             }
             break
         case actionSetHome:
+            _activeVehicle.setEstimatorOrigin(actionData)
             _activeVehicle.doSetHome(actionData)
             break
         case actionSetEstimatorOrigin:

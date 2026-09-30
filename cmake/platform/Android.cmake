@@ -6,6 +6,12 @@ if(NOT ANDROID)
     message(FATAL_ERROR "QGC: Invalid Platform: Android.cmake included but platform is not Android")
 endif()
 
+# Disable automoc compiler predefines on Windows host to prevent spaces in paths breaking clang++ .rsp files
+set(CMAKE_AUTOMOC_COMPILER_PREDEFINES OFF)
+if(TARGET ${CMAKE_PROJECT_NAME})
+    set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES AUTOMOC_COMPILER_PREDEFINES OFF)
+endif()
+
 # ----------------------------------------------------------------------------
 # Android NDK Version Validation
 # ----------------------------------------------------------------------------
@@ -99,6 +105,7 @@ set_target_properties(${CMAKE_PROJECT_NAME}
         QT_ANDROID_VERSION_NAME "${CMAKE_PROJECT_VERSION}"
         QT_ANDROID_VERSION_CODE ${ANDROID_VERSION_CODE}
         QT_ANDROID_APP_NAME "${CMAKE_PROJECT_NAME}"
+        QT_ANDROID_APP_NAME "${QGC_APP_NAME}"
         QT_ANDROID_APP_ICON "@mipmap/ic_launcher"
         QT_ANDROID_LEGACY_PACKAGING $<BOOL:${QGC_ENABLE_ASAN}>
         QT_QML_ROOT_PATH "${CMAKE_SOURCE_DIR}"
@@ -180,6 +187,11 @@ qt_add_android_permission(${CMAKE_PROJECT_NAME}
 )
 qt_add_android_permission(${CMAKE_PROJECT_NAME}
     NAME android.permission.ACCESS_COARSE_LOCATION
+)
+
+# Needed for in-app OTA APK package installation
+qt_add_android_permission(${CMAKE_PROJECT_NAME}
+    NAME android.permission.REQUEST_INSTALL_PACKAGES
 )
 
 message(STATUS "QGC: Android platform configuration applied")

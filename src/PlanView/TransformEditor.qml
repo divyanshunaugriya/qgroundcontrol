@@ -159,8 +159,8 @@ Rectangle {
                     id:               coordinateSystemCombo
                     Layout.fillWidth: true
                     model:            globals.activeVehicle
-                                      ? [ qsTr("Geographic"), qsTr("Universal Transverse Mercator"), qsTr("Military Grid Reference"), qsTr("Vehicle Position") ]
-                                      : [ qsTr("Geographic"), qsTr("Universal Transverse Mercator"), qsTr("Military Grid Reference") ]
+                                      ? [ qsTr("Geographic"), qsTr("Universal Transverse Mercator"), qsTr("Grid Reference (GR / MGRS)"), qsTr("Vehicle Position") ]
+                                      : [ qsTr("Geographic"), qsTr("Universal Transverse Mercator"), qsTr("Grid Reference (GR / MGRS)") ]
                 }
             }
 
@@ -241,7 +241,7 @@ Rectangle {
 
             LabelledFactTextField {
                 id:                      mgrsField
-                label:                   qsTr("MGRS")
+                label:                   qsTr("Grid Reference (GR)")
                 fact:                    positionController.mgrs
                 textFieldPreferredWidth: _textFieldWidth
                 Layout.fillWidth:        true

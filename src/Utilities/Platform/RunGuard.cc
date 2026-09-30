@@ -9,8 +9,6 @@ RunGuard::RunGuard(const QString &key)
     , _lockFilePath(lockDir() + QLatin1String("/qgc-") + generateKeyHash(key, QLatin1String("_lock")) + QLatin1String(".lock"))
     , _lockFile(_lockFilePath)
 {
-    // Recover instantly from stale locks after crashes.
-    _lockFile.setStaleLockTime(0);
 }
 
 RunGuard::~RunGuard()
@@ -26,6 +24,10 @@ bool RunGuard::isAnotherRunning()
 
     if (_lockFile.tryLock(0)) {
         _lockFile.unlock();
+        return false;
+    }
+
+    if (_lockFile.removeStaleLockFile()) {
         return false;
     }
 
@@ -49,7 +51,16 @@ bool RunGuard::isAnotherRunning()
 
 bool RunGuard::tryToRun()
 {
-    return (_lockFile.isLocked() ? true : _lockFile.tryLock(0));
+    if (_lockFile.isLocked()) {
+        return true;
+    }
+    if (_lockFile.tryLock(0)) {
+        return true;
+    }
+    if (_lockFile.removeStaleLockFile()) {
+        return _lockFile.tryLock(0);
+    }
+    return false;
 }
 
 void RunGuard::release()

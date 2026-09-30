@@ -6,7 +6,7 @@ import QGroundControl.Controls
 
 GPSIndicator {
     objectName:     "toolbar_gpsIndicator"
-    property bool showIndicator: _activeVehicle.gps.telemetryAvailable
+    property bool showIndicator: _activeVehicle != null
 
     property var _activeVehicle: QGroundControl.multiVehicleManager.activeVehicle
 }

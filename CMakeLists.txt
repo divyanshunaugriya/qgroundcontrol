@@ -118,7 +118,7 @@ endif()
 # ----------------------------------------------------------------------------
 # Project Declaration
 # ----------------------------------------------------------------------------
-project(${QGC_APP_NAME}
+project(QGroundControl
     VERSION ${QGC_APP_VERSION}
     DESCRIPTION "${QGC_APP_DESCRIPTION}"
     HOMEPAGE_URL "https://${QGC_ORG_DOMAIN}"
@@ -309,6 +309,10 @@ set(QGC_APP_RESOURCES
     "${CMAKE_SOURCE_DIR}/resources/chevron-double-right.svg"
     "${CMAKE_SOURCE_DIR}/resources/GeoFence.svg"
     "${CMAKE_SOURCE_DIR}/resources/QGCLogoFull.svg"
+    "${CMAKE_SOURCE_DIR}/resources/irs_splash_bulb.svg"
+    "${CMAKE_SOURCE_DIR}/resources/irs_splash_drone.svg"
+    "${CMAKE_SOURCE_DIR}/resources/dji_drone_hero.png"
+    "${CMAKE_SOURCE_DIR}/resources/irs_logo.png"
     "${CMAKE_SOURCE_DIR}/resources/QGCLogoWhite.svg"
     "${CMAKE_SOURCE_DIR}/resources/QGCLogoArrow.svg"
     "${CMAKE_SOURCE_DIR}/resources/rtl.svg"
@@ -350,6 +354,10 @@ set_source_files_properties("${CMAKE_SOURCE_DIR}/resources/fonts/NanumGothic-Bol
 include(Hardening)
 qgc_apply_global_hardening()
 
+if(ANDROID)
+    set(CMAKE_AUTOMOC_COMPILER_PREDEFINES OFF)
+endif()
+
 qt_add_executable(${CMAKE_PROJECT_NAME}
     WIN32          # Windows GUI application
     MACOSX_BUNDLE  # macOS application bundle
@@ -369,7 +377,11 @@ qt_add_resources(${CMAKE_PROJECT_NAME} qgc_app_resources
 
 set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
     ADDITIONAL_CLEAN_FILES "${CMAKE_BINARY_DIR}/ccache-launcher"
+    AUTOGEN_PARALLEL 4
 )
+if(MSVC)
+    target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE /Zm200)
+endif()
 
 include(Sanitizers)
 

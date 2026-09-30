@@ -104,7 +104,7 @@ DropPanel {
 
             QGCButton {
                 Layout.fillWidth: true
-                text: qsTr("Set Estimator Origin")
+                text: qsTr("📍 Set Drone / VIO Location Here")
                 visible: root._guidedController.showSetEstimatorOrigin
                 onClicked: {
                     root.close()
@@ -123,9 +123,25 @@ DropPanel {
             }
 
             ColumnLayout {
-                spacing: 0
-                QGCLabel { text: qsTr("Lat: %1").arg(root.mapClickCoord.latitude.toFixed(6)) }
-                QGCLabel { text: qsTr("Lon: %1").arg(root.mapClickCoord.longitude.toFixed(6)) }
+                spacing: 2
+                QGCLabel {
+                    text:        qsTr("Lat: %1").arg(root.mapClickCoord.latitude.toFixed(6))
+                    font.family: ScreenTools.fixedPitchFontFamily
+                    font.bold:   true
+                }
+                QGCLabel {
+                    text:        qsTr("Lon: %1").arg(root.mapClickCoord.longitude.toFixed(6))
+                    font.family: ScreenTools.fixedPitchFontFamily
+                    font.bold:   true
+                }
+                QGCLabel {
+                    readonly property string _mgrs: QGroundControl.coordinateToMGRS(root.mapClickCoord)
+                    text:        qsTr("GR:  %1").arg(_mgrs.length > 0 ? _mgrs : "------")
+                    font.family: ScreenTools.fixedPitchFontFamily
+                    font.bold:   true
+                    color:       "#00E5FF"
+                    visible:     _mgrs.length > 0
+                }
             }
         }
     }

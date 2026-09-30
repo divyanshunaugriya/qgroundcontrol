@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtLocation
 import QtPositioning
 import QtQuick.Dialogs
+import QtQuick.Layouts
 
 import QGroundControl
 import QGroundControl.Controls
@@ -27,6 +28,7 @@ Map {
 
     property var    _activeVehicle:             QGroundControl.multiVehicleManager.activeVehicle
     property var    _activeVehicleCoordinate:   _activeVehicle ? _activeVehicle.coordinate : QtPositioning.coordinate()
+    property var    cursorCoordinate:           center
 
     function setVisibleRegion(region) {
         // This works around a bug on Qt where if you set a visibleRegion and then the user moves or zooms the map
@@ -159,6 +161,22 @@ Map {
         }
     }
 
+    HoverHandler {
+        id: mapHoverHandler
+        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+        onPointChanged: {
+            const coord = _map.toCoordinate(point.position, false)
+            if (coord && coord.isValid) {
+                _map.cursorCoordinate = coord
+            }
+        }
+        onHoveredChanged: {
+            if (!hovered) {
+                _map.cursorCoordinate = _map.center
+            }
+        }
+    }
+
     // We specifically do not use a DragHandler for panning. It just causes too many problems if you overlay anything else like a Flickable above it.
     // Causes all sorts of crazy problems where dragging/scrolling  no longerr works on items above in the hierarchy.
     // Since we are using a MouseArea we also can't use TapHandler for clicks. So we handle that here as well.
@@ -258,6 +276,154 @@ Map {
                 origin.x:       mapItemImage.width  / 2
                 origin.y:       mapItemImage.height / 2
                 angle:          isNaN(gcsHeading) ? 0 : gcsHeading
+            }
+        }
+    }
+
+    QGCPalette { id: qgcPal; colorGroupEnabled: enabled }
+
+    property var  touchCoordinate: QtPositioning.coordinate()
+    property bool showTouchPin:    false
+
+    onPlanViewChanged: {
+        if (planView) {
+            showTouchPin = false
+        }
+    }
+
+    onMapClicked: (position) => {
+        if (!_map.planView) {
+            touchCoordinate = _map.toCoordinate(position, false)
+            showTouchPin = true
+        }
+    }
+
+    /// On-Map Interactive Touch/Click Coordinate Badge (dropped right at touched location - disabled in Plan View)
+    MapQuickItem {
+        id:            touchPinMarker
+        anchorPoint.x: touchPinBox.width / 2
+        anchorPoint.y: touchPinBox.height + (ScreenTools.defaultFontPixelHeight * 0.4)
+        coordinate:    _map.touchCoordinate
+        visible:       !_map.planView && _map.showTouchPin && _map.touchCoordinate.isValid
+
+        sourceItem: Column {
+            id:                  touchPinBox
+            spacing:             2
+
+            Rectangle {
+                anchors.horizontalCenter: parent.horizontalCenter
+                width:        touchContentLayout.width + (ScreenTools.defaultFontPixelWidth * 1.6)
+                height:       touchContentLayout.height + (ScreenTools.defaultFontPixelHeight * 0.6)
+                radius:       ScreenTools.defaultFontPixelWidth * 0.4
+                color:        "#E60B0E14"
+                border.color: "#00E5FF"
+                border.width: 1
+
+                RowLayout {
+                    id:               touchContentLayout
+                    anchors.centerIn: parent
+                    spacing:          ScreenTools.defaultFontPixelWidth * 0.8
+
+                    Column {
+                        spacing: 2
+
+                        QGCLabel {
+                            text:           _map.touchCoordinate.isValid ? QGroundControl.coordinateToFormattedLatLon(_map.touchCoordinate, 6) : ""
+                            font.family:    ScreenTools.fixedPitchFontFamily
+                            font.pointSize: ScreenTools.smallFontPointSize * 0.85
+                            font.bold:      true
+                            color:          "#FFFFFF"
+                            visible:        QGroundControl.coordinateDisplayMode === 0 || QGroundControl.coordinateDisplayMode === 2
+                        }
+
+                        QGCLabel {
+                            readonly property string _mgrs: _map.touchCoordinate.isValid ? QGroundControl.coordinateToMGRS(_map.touchCoordinate) : ""
+                            text:           qsTr("GR: %1").arg(_mgrs)
+                            font.family:    ScreenTools.fixedPitchFontFamily
+                            font.pointSize: ScreenTools.smallFontPointSize * 0.85
+                            font.bold:      true
+                            color:          "#00E5FF"
+                            visible:        (QGroundControl.coordinateDisplayMode === 1 || QGroundControl.coordinateDisplayMode === 2) && _mgrs.length > 0
+                        }
+                    }
+
+                    // Direct Action Button to set touched location as Drone / VIO Initial Position
+                    Rectangle {
+                        id:                     setVioTouchBtn
+                        property bool           _sent: false
+                        visible:                QGroundControl.multiVehicleManager.activeVehicle !== null && !QGroundControl.multiVehicleManager.activeVehicle.flying
+                        Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 1.3
+                        Layout.preferredWidth:  setVioTouchText.width + (ScreenTools.defaultFontPixelWidth * 1.4)
+                        radius:                 ScreenTools.defaultFontPixelWidth * 0.3
+                        color:                  _sent ? "#2E7D32" : (setVioTouchMouse.containsMouse ? "#00E5FF" : "#1E293B")
+                        border.color:           "#00E5FF"
+                        border.width:           1
+
+                        QGCLabel {
+                            id:               setVioTouchText
+                            anchors.centerIn: parent
+                            text:             setVioTouchBtn._sent ? qsTr("✓ VIO SET") : qsTr("📍 Set Drone/VIO")
+                            font.bold:        true
+                            font.pointSize:   ScreenTools.smallFontPointSize * 0.8
+                            color:            setVioTouchBtn._sent ? "#FFFFFF" : (setVioTouchMouse.containsMouse ? "#000000" : "#FFFFFF")
+                        }
+
+                        MouseArea {
+                            id:              setVioTouchMouse
+                            anchors.fill:    parent
+                            hoverEnabled:    true
+                            cursorShape:     Qt.PointingHandCursor
+                            acceptedButtons: Qt.LeftButton
+                            onClicked: {
+                                var v = QGroundControl.multiVehicleManager.activeVehicle
+                                if (v && _map.touchCoordinate.isValid) {
+                                    v.setEstimatorOrigin(_map.touchCoordinate)
+                                    setVioTouchBtn._sent = true
+                                    vioSentTimer.restart()
+                                }
+                            }
+                        }
+
+                        Timer {
+                            id:          vioSentTimer
+                            interval:    2500
+                            repeat:      false
+                            onTriggered: setVioTouchBtn._sent = false
+                        }
+                    }
+
+                    Rectangle {
+                        width:  ScreenTools.defaultFontPixelHeight * 1.0
+                        height: width
+                        radius: width / 2
+                        color:  closeTouchMouse.pressed ? "#EF4444" : "#1E293B"
+
+                        QGCLabel {
+                            anchors.centerIn: parent
+                            text:             "✕"
+                            font.bold:        true
+                            font.pointSize:   ScreenTools.smallFontPointSize * 0.8
+                            color:            "#FFFFFF"
+                        }
+
+                        MouseArea {
+                            id:              closeTouchMouse
+                            anchors.fill:    parent
+                            cursorShape:     Qt.PointingHandCursor
+                            acceptedButtons: Qt.LeftButton
+                            onClicked:       _map.showTouchPin = false
+                        }
+                    }
+                }
+            }
+
+            // Downward pointing arrow tip pointing exactly to touched location
+            Rectangle {
+                width:                    ScreenTools.defaultFontPixelWidth * 0.8
+                height:                   width
+                rotation:                 45
+                color:                    "#00E5FF"
+                anchors.horizontalCenter: parent.horizontalCenter
             }
         }
     }

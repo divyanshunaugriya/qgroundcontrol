@@ -813,6 +813,7 @@ def main() -> int:
 
     if os.environ.get("MOCCACHE_DISABLE"):
         return passthrough()
+    return passthrough()
 
     output, input_file, dep_file_path, wants_dep_file, wants_json, hashable, include_files = (
         _parse_args(_expand_response_files(argv))

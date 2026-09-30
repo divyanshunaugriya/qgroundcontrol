@@ -7,10 +7,10 @@ import QGroundControl.Controls
 // Used as the base class control for nboth VehicleGPSIndicator and RTKGPSIndicator
 
 Item {
-    id:             control
-    width:          gpsIndicatorRow.width
-    anchors.top:    parent.top
-    anchors.bottom: parent.bottom
+    id:                     control
+    width:                  gpsIndicatorRow.implicitWidth
+    implicitWidth:          gpsIndicatorRow.implicitWidth
+    Layout.preferredWidth:  implicitWidth
 
     property var    _activeVehicle: QGroundControl.multiVehicleManager.activeVehicle
     property bool   _rtkConnected:  QGroundControl.gpsRtk.connected.value

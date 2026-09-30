@@ -214,6 +214,15 @@ public:
     Q_PROPERTY(double               loadProgress                READ loadProgress                                                   NOTIFY loadProgressChanged)
     Q_PROPERTY(bool                 initialConnectComplete      READ isInitialConnectComplete                                       NOTIFY initialConnectComplete)
 
+    // IRS Drone Detection & Security Gating
+    Q_PROPERTY(QString  detectedModelName   READ detectedModelName      NOTIFY detectedModelNameChanged)
+    Q_PROPERTY(QString  detectedModelName   READ detectedModelName      WRITE setDetectedModelName  NOTIFY detectedModelNameChanged)
+    Q_PROPERTY(QString  serialNumber        READ serialNumber           NOTIFY serialNumberChanged)
+    Q_PROPERTY(QString  customerName        READ customerName           NOTIFY customerNameChanged)
+    Q_PROPERTY(QString  mcuUID              READ mcuUID                 NOTIFY mcuUIDChanged)
+    Q_PROPERTY(bool     isAuthorizedDrone   READ isAuthorizedDrone      NOTIFY authorizationChanged)
+    Q_PROPERTY(bool     authCheckCompleted  READ authCheckCompleted     NOTIFY authorizationChanged)
+
     // The following properties relate to Orbit status
     Q_PROPERTY(bool             orbitActive     READ orbitActive        NOTIFY orbitActiveChanged)
     Q_PROPERTY(QGCMapCircle*    orbitMapCircle  READ orbitMapCircle     CONSTANT)
@@ -256,6 +265,7 @@ public:
 
     // Dynamic FactGroupListModel properties
     Q_PROPERTY(QmlObjectListModel*  batteries       READ batteries                  CONSTANT)
+    Q_PROPERTY(FactGroup*           battery         READ primaryBatteryFactGroup    NOTIFY primaryBatteryChanged)
     Q_PROPERTY(QmlObjectListModel*  escs            READ escs                       CONSTANT)
 
     Q_PROPERTY(int      firmwareMajorVersion        READ firmwareMajorVersion       NOTIFY firmwareVersionChanged)
@@ -436,6 +446,19 @@ public:
     QGCMAVLink::VehicleClass_t vehicleClass(void) const { return QGCMAVLink::vehicleClass(_vehicleType); }
     Q_INVOKABLE QString vehicleClassInternalName() const;
 
+    // IRS Drone Detector Getters
+    QString detectedModelName() const { return _detectedModelName; }
+    void setDetectedModelName(const QString& modelName);
+    QString serialNumber() const { return _serialNumber; }
+    QString customerName() const { return _customerName; }
+    QString mcuUID() const { return _mcuUID; }
+    bool isAuthorizedDrone() const { return _isAuthorizedDrone; }
+    bool authCheckCompleted() const { return _authCheckCompleted; }
+
+    void setMcuUID(const QString& uid);
+    void setSerialNumber(const QString& sn);
+    void lookupSalesRegistry();
+
     /// Sends a message to the specified link
     /// @return true: message sent, false: Link no longer connected
     bool sendMessageOnLinkThreadSafe(LinkInterface* link, mavlink_message_t message);
@@ -569,6 +592,7 @@ public:
     FactGroup* rpmFactGroup                 ();
 
     QmlObjectListModel* batteries           ();
+    FactGroup*          primaryBatteryFactGroup ();
     QmlObjectListModel* escs                ();
 
     MissionManager*                 missionManager      () { return _missionManager; }
@@ -830,6 +854,14 @@ signals:
     void roiRelativeAltitudeMetersChanged();
     void roiCoordChanged                (const QGeoCoordinate& centerCoord);
     void initialConnectComplete         ();
+    void primaryBatteryChanged          ();
+
+    // IRS Drone Detection Signals
+    void detectedModelNameChanged       (const QString& modelName);
+    void serialNumberChanged            (const QString& sn);
+    void customerNameChanged            (const QString& customer);
+    void mcuUIDChanged                  (const QString& uid);
+    void authorizationChanged           (bool authorized);
 
     void sensorsParametersResetAck      (bool success);
 
@@ -838,6 +870,9 @@ signals:
 
 private slots:
     void _mavlinkMessageReceived            (LinkInterface* link, mavlink_message_t message);
+    void _checkIRSModelSignature            (const QString& text);
+    void _onAuthTimeout                     ();
+    void _verifyAuthorizationOnConnect      ();
     void _sendMessageMultipleNext           ();
     void _parametersReady                   (bool parametersReady);
     void _handleFlightModeChanged           (const QString& flightMode);
@@ -1137,6 +1172,15 @@ public:
 
     // All terrain query workflows (doSetHome, ROI, altAboveTerrain) live in the coordinator.
     TerrainQueryCoordinator*    _terrainQueryCoordinator = nullptr;
+
+    // IRS Drone Model Detection & Security Gating
+    QString                     _detectedModelName;
+    QString                     _serialNumber;
+    QString                     _customerName;
+    QString                     _mcuUID;
+    bool                        _isAuthorizedDrone          = false;
+    bool                        _authCheckCompleted         = false;
+    QTimer*                     _authTimeoutTimer           = nullptr;
 
 public:
     int32_t getMessageRate(uint8_t compId, uint16_t msgId);

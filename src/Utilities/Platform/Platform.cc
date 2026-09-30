@@ -171,6 +171,12 @@ std::optional<int> Platform::initialize(int argc, char* argv[],
 #else
     Q_UNUSED(argc);
     Q_UNUSED(argv);
+    // Force single-threaded Qt Quick render loop on Android to prevent
+    // the hwuiTask pthread_mutex destroyed-mutex SIGABRT crash on Android 14+.
+    // The default threaded render loop races with Android's HWUI compositor.
+    if (!qEnvironmentVariableIsSet("QSG_RENDER_LOOP")) {
+        (void) qputenv("QSG_RENDER_LOOP", "basic");
+    }
 #endif
 
 #ifdef Q_OS_UNIX

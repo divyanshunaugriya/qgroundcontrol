@@ -230,7 +230,7 @@ function(qgc_config_moccache)
         )
         string(APPEND _wrapper "if not defined MOCCACHE_MAX_SIZE set \"MOCCACHE_MAX_SIZE=256M\"\r\n")
         string(APPEND _wrapper
-               "\"${QGC_MOCCACHE_PYTHON}\" \"${_moccache_py}\" --real-moc \"${_real_moc}\" %*\r\n"
+               "\"${_real_moc}\" %*\r\n"
         )
         string(APPEND _wrapper "exit /b %ERRORLEVEL%\r\n")
         file(WRITE "${_moccache_wrapper}" "${_wrapper}")

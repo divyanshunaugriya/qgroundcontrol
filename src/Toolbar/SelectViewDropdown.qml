@@ -17,6 +17,20 @@ ToolIndicatorPage {
             rowSpacing: columnSpacing
 
             SubMenuButton {
+                objectName: "toolbar_viewHub"
+                implicitHeight: root._toolButtonHeight
+                Layout.fillWidth: true
+                text: qsTr("Hub")
+                imageResource: "/res/QGCLogoFull.svg"
+                onClicked: {
+                    if (mainWindow.allowViewSwitch()) {
+                        mainWindow.closeIndicatorDrawer()
+                        mainWindow.showHubPage()
+                    }
+                }
+            }
+
+            SubMenuButton {
                 objectName: "toolbar_viewFly"
                 implicitHeight: root._toolButtonHeight
                 Layout.fillWidth: true

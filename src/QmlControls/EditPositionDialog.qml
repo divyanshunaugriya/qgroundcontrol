@@ -43,8 +43,8 @@ QGCPopupDialog {
             Layout.fillWidth:   true
             label:              qsTr("Coordinate System")
             model:              globals.activeVehicle ?
-                                    [ qsTr("Geographic"), qsTr("Universal Transverse Mercator"), qsTr("Military Grid Reference"), qsTr("Vehicle Position") ] :
-                                    [ qsTr("Geographic"), qsTr("Universal Transverse Mercator"), qsTr("Military Grid Reference") ]
+                                    [ qsTr("Geographic"), qsTr("Universal Transverse Mercator"), qsTr("Grid Reference (GR / MGRS)"), qsTr("Vehicle Position") ] :
+                                    [ qsTr("Geographic"), qsTr("Universal Transverse Mercator"), qsTr("Grid Reference (GR / MGRS)") ]
         }
 
         LabelledFactTextField {
@@ -61,6 +61,13 @@ QGCPopupDialog {
             textFieldPreferredWidth: _textFieldWidth
             Layout.fillWidth:   true
             visible:            _showGeographic
+        }
+
+        LabelledLabel {
+            label:              qsTr("Grid Ref (GR)")
+            labelText:          controller.coordinate.isValid ? QGroundControl.coordinateToMGRS(controller.coordinate) : ""
+            Layout.fillWidth:   true
+            visible:            _showGeographic && controller.coordinate.isValid
         }
 
         LabelledFactTextField {
@@ -96,7 +103,7 @@ QGCPopupDialog {
         }
 
         LabelledFactTextField {
-            label:              qsTr("MGRS")
+            label:              qsTr("Grid Reference (GR)")
             fact:               controller.mgrs
             visible:            _showMGRS
             textFieldPreferredWidth: _textFieldWidth
@@ -113,6 +120,13 @@ QGCPopupDialog {
         LabelledLabel {
             label:              qsTr("Longitude")
             labelText:          globals.activeVehicle ? globals.activeVehicle.coordinate.longitude.toFixed(7) : ""
+            Layout.fillWidth:   true
+            visible:            _showVehicle
+        }
+
+        LabelledLabel {
+            label:              qsTr("Grid Ref (GR)")
+            labelText:          globals.activeVehicle && globals.activeVehicle.coordinate.isValid ? QGroundControl.coordinateToMGRS(globals.activeVehicle.coordinate) : ""
             Layout.fillWidth:   true
             visible:            _showVehicle
         }

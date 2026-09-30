@@ -305,6 +305,13 @@ void InitialConnectStateMachine::_handleAutopilotVersionSuccess(const mavlink_me
     vehicle()->_firmwareBoardProductId = autopilotVersion.product_id;
     emit vehicle()->vehicleUIDChanged();
 
+    // Decode 12-byte hardware STM32 MCU UID from uid2
+    QString mcuUidStr;
+    for (int i = 0; i < 12; i++) {
+        mcuUidStr += QString("%1").arg(autopilotVersion.uid2[i], 2, 16, QChar('0'));
+    }
+    vehicle()->setMcuUID(mcuUidStr.toUpper());
+
     if (autopilotVersion.flight_sw_version != 0) {
         int majorVersion, minorVersion, patchVersion;
         FIRMWARE_VERSION_TYPE versionType;

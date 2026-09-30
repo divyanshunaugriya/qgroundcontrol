@@ -31,7 +31,8 @@ RowLayout {
         Layout.preferredWidth: contentWidth + (vehicleMessagesIcon.visible ? vehicleMessagesIcon.width + control.spacing : 0)
         verticalAlignment:  Text.AlignVCenter
         text:               mainStatusText()
-        color:              qgcPal.text
+        color:              "#E2E8F0"
+        font.bold:          true
         font.pointSize:     ScreenTools.largeFontPointSize
 
         property string _commLostText:      qsTr("Comms Lost")
@@ -135,6 +136,42 @@ RowLayout {
         QGCMouseArea {
             anchors.fill:   parent
             onClicked:      dropMainStatusIndicator()
+        }
+    }
+
+    Rectangle {
+        id:                     irsModelBadge
+        visible:                false
+        Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 1.4
+        Layout.preferredWidth:  modelNameText.contentWidth + ScreenTools.defaultFontPixelWidth * 2
+        Layout.alignment:       Qt.AlignVCenter
+        radius:                 4
+        color:                  _activeVehicle && _activeVehicle.isAuthorizedDrone ? "#059669" : "#DC2626"
+
+        QGCLabel {
+            id:                 modelNameText
+            anchors.centerIn:   parent
+            text:               _activeVehicle ? (_activeVehicle.detectedModelName + (!ScreenTools.isMobile && _activeVehicle.serialNumber !== "" ? " | SN: " + _activeVehicle.serialNumber : "")) : ""
+            color:              "#FFFFFF"
+            font.bold:          true
+            font.pointSize:     ScreenTools.isMobile ? ScreenTools.smallFontPointSize : ScreenTools.defaultFontPointSize
+        }
+
+        QGCMouseArea {
+            anchors.fill:       parent
+            onClicked: {
+                if (_activeVehicle) {
+                    var infoMsg = qsTr("Model: %1\nSerial Number: %2").arg(_activeVehicle.detectedModelName).arg(_activeVehicle.serialNumber !== "" ? _activeVehicle.serialNumber : "N/A")
+                    if (_activeVehicle.customerName !== "") {
+                        infoMsg += qsTr("\nCustomer / Owner: %1").arg(_activeVehicle.customerName)
+                    }
+                    if (_activeVehicle.mcuUID !== "") {
+                        infoMsg += qsTr("\nMCU Silicon UID: %1").arg(_activeVehicle.mcuUID)
+                    }
+                    infoMsg += qsTr("\n\nIRS GCS • Powered by Nextkick")
+                    QGroundControl.showMessageDialog(irsModelBadge, qsTr("IRS Drone Information"), infoMsg)
+                }
+            }
         }
     }
 

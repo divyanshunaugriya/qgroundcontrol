@@ -1,4 +1,4 @@
-import QtQuick
+ import QtQuick
 import QtQuick.Layouts
 
 import QGroundControl
@@ -24,7 +24,7 @@ Rectangle {
             id:         grid
             columns:    2
 
-            QGCLabel { text: qsTr("QGroundControl User Guide") }
+            QGCLabel { text: qsTr("IRS GCS User Guide") }
             QGCLabel {
                 linkColor:          qgcPal.text
                 text:               "<a href=\"https://docs.qgroundcontrol.com\">https://docs.qgroundcontrol.com</a>"

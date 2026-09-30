@@ -8,13 +8,13 @@ import QGroundControl.FactControls
 //-------------------------------------------------------------------------
 //-- Battery Indicator
 Item {
-    id:             control
-    objectName:     "toolbar_batteryIndicator"
-    anchors.top:    parent.top
-    anchors.bottom: parent.bottom
-    width:          batteryIndicatorRow.width
+    id:                     control
+    objectName:             "toolbar_batteryIndicator"
+    width:                  batteryIndicatorRow.implicitWidth
+    implicitWidth:          batteryIndicatorRow.implicitWidth
+    Layout.preferredWidth:  implicitWidth
 
-    property bool       showIndicator:      _activeVehicle && _activeVehicle.batteries.count > 0
+    property bool       showIndicator:      _activeVehicle != null
     property bool       waitForParameters:  false
     property Component  expandedPageComponent
 
@@ -171,6 +171,38 @@ Item {
         anchors.bottom: parent.bottom
         spacing:        ScreenTools.defaultFontPixelWidth / 2
 
+        Row {
+            Layout.fillHeight:  true
+            spacing:            ScreenTools.defaultFontPixelWidth / 4
+            visible:            !_activeVehicle || _activeVehicle.batteries.count === 0
+
+            QGCColoredImage {
+                anchors.top:        parent.top
+                anchors.bottom:     parent.bottom
+                width:              height
+                sourceSize.width:   width
+                source:             "/qmlimages/Battery.svg"
+                fillMode:           Image.PreserveAspectFit
+                color:              qgcPal.text
+                opacity:            0.6
+            }
+
+            ColumnLayout {
+                anchors.top:            parent.top
+                anchors.bottom:         parent.bottom
+                spacing:                0
+
+                QGCLabel {
+                    Layout.alignment:       Qt.AlignHCenter
+                    verticalAlignment:      Text.AlignVCenter
+                    color:                  qgcPal.text
+                    text:                   qsTr("--%")
+                    font.pointSize:         ScreenTools.mediumFontPointSize
+                    opacity:                0.6
+                }
+            }
+        }
+
         Repeater {
             model: _activeVehicle ? _activeVehicle.batteries : 0
 
@@ -264,7 +296,7 @@ Item {
                     if (battery.percentRemaining.rawValue > 98.9) {
                         return qsTr("100%")
                     } else {
-                        return battery.percentRemaining.valueString + battery.percentRemaining.units
+                        return Math.round(battery.percentRemaining.rawValue) + "%"
                     }
                 } else if (!isNaN(battery.voltage.rawValue)) {
                     return battery.voltage.valueString + battery.voltage.units
@@ -330,7 +362,7 @@ Item {
                 QGCLabel {
                     Layout.alignment:       Qt.AlignHCenter
                     verticalAlignment:      Text.AlignVCenter
-                    color:                  qgcPal.text
+                    color:                  getBatteryColor()
                     text:                   getBatteryPercentageText()
                     font.pointSize:         _showBoth ? ScreenTools.defaultFontPointSize : ScreenTools.mediumFontPointSize
                     visible:                _showBoth || _showPercentage

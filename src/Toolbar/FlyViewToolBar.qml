@@ -102,6 +102,20 @@ Item {
                         Layout.fillHeight:  true
                         visible:            _activeVehicle
                     }
+
+                    VehicleGPSIndicator {
+                        objectName:             "toolbar_gpsIndicator"
+                        Layout.fillHeight:      true
+                        Layout.preferredWidth:  implicitWidth
+                        visible:                _activeVehicle
+                    }
+
+                    BatteryIndicator {
+                        objectName:             "toolbar_batteryIndicator"
+                        Layout.fillHeight:      true
+                        Layout.preferredWidth:  implicitWidth
+                        visible:                _activeVehicle
+                    }
                 }
             }
             Item {
@@ -127,7 +141,7 @@ Item {
 
             Item {
                 id:     rightPanel
-                width:  flyViewIndicators.width
+                width:  flyViewIndicators.width + (modelNameLabel.visible ? modelNameLabel.implicitWidth + ScreenTools.defaultFontPixelWidth * 3 : 0)
                 height: parent.height
 
                 Rectangle {
@@ -135,9 +149,26 @@ Item {
                     color:          qgcPal.windowTransparent
                 }
 
-                FlyViewToolBarIndicators {
-                    id:     flyViewIndicators
-                    height: parent.height
+                RowLayout {
+                    anchors.fill:   parent
+                    spacing:        ScreenTools.defaultFontPixelWidth
+
+                    FlyViewToolBarIndicators {
+                        id:                 flyViewIndicators
+                        Layout.fillHeight:  true
+                    }
+
+                    QGCLabel {
+                        id:                     modelNameLabel
+                        Layout.fillHeight:      true
+                        Layout.rightMargin:     ScreenTools.defaultFontPixelWidth * 2
+                        verticalAlignment:      Text.AlignVCenter
+                        text:                   _activeVehicle ? (_activeVehicle.detectedModelName !== "" ? _activeVehicle.detectedModelName : _activeVehicle.vehicleTypeString) : ""
+                        color:                  "#000000"
+                        font.bold:              true
+                        font.pointSize:         ScreenTools.defaultFontPointSize * 1.15
+                        visible:                _activeVehicle && text !== ""
+                    }
                 }
             }
         }

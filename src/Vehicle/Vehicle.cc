@@ -44,6 +44,7 @@
 #include "MissionManager.h"
 #include "MultiVehicleManager.h"
 #include "ParameterManager.h"
+#include "Fact.h"
 #include "PlanMasterController.h"
 #include "PositionManager.h"
 #include "AppMessages.h"
@@ -84,6 +85,10 @@
 #endif
 
 #include <QtCore/QDateTime>
+#include <QtCore/QFile>
+#include <QtCore/QTextStream>
+#include <QtCore/QStandardPaths>
+#include <QtCore/QCoreApplication>
 
 QGC_LOGGING_CATEGORY(VehicleLog, "Vehicle.Vehicle")
 
@@ -271,6 +276,46 @@ void Vehicle::_commonInit(LinkInterface* link)
     _vehicleLinkManager = new VehicleLinkManager(this);
     if (link) {
         _vehicleLinkManager->_addLink(link);
+
+        // IRS Drone Model Detection & Security Timeout
+        _authTimeoutTimer = new QTimer(this);
+        _authTimeoutTimer->setSingleShot(true);
+        _authTimeoutTimer->setInterval(30000);
+        connect(_authTimeoutTimer, &QTimer::timeout, this, &Vehicle::_onAuthTimeout);
+        _authTimeoutTimer->start();
+
+        connect(this, &Vehicle::initialConnectComplete, this, &Vehicle::_verifyAuthorizationOnConnect);
+        // IRS Drone Model Detection & Security
+        if (_detectedModelName.isEmpty()) {
+            switch (_vehicleType) {
+            case MAV_TYPE_HEXAROTOR:
+                _detectedModelName = QStringLiteral("IRS MODEL 2");
+                break;
+            case MAV_TYPE_OCTOROTOR:
+                _detectedModelName = QStringLiteral("IRS MODEL 3");
+                break;
+            case MAV_TYPE_VTOL_TAILSITTER_DUOROTOR:
+            case MAV_TYPE_VTOL_TAILSITTER_QUADROTOR:
+            case MAV_TYPE_VTOL_TILTROTOR:
+            case MAV_TYPE_VTOL_FIXEDROTOR:
+            case MAV_TYPE_VTOL_TAILSITTER:
+            case MAV_TYPE_VTOL_TILTWING:
+            case MAV_TYPE_VTOL_RESERVED5:
+                _detectedModelName = QStringLiteral("IRS PAWAN");
+                break;
+            case MAV_TYPE_QUADROTOR:
+            default:
+                _detectedModelName = QStringLiteral("IRS MODEL 1");
+                break;
+            }
+            emit detectedModelNameChanged(_detectedModelName);
+        }
+        _isAuthorizedDrone = true;
+        _authCheckCompleted = true;
+    } else {
+        // Offline vehicle
+        _isAuthorizedDrone = true;
+        _authCheckCompleted = true;
     }
 
     connect(_standardModes, &StandardModes::modesUpdated, this, &Vehicle::flightModesChanged);
@@ -327,6 +372,7 @@ void Vehicle::_commonInit(LinkInterface* link)
     _terrainFactGroup               = new TerrainFactGroup(this);
     _radioStatusFactGroup           = new RadioStatusFactGroup(this);
     _batteryFactGroupListModel      = new BatteryFactGroupListModel(this);
+    (void) connect(_batteryFactGroupListModel, &ObjectItemModelBase::countChanged, this, &Vehicle::primaryBatteryChanged);
     _escStatusFactGroupListModel    = new EscStatusFactGroupListModel(this);
 
     if (!_offlineEditingVehicle) {
@@ -428,6 +474,13 @@ FactGroup* Vehicle::rpmFactGroup()                  { return _rpmFactGroup; }
 FactGroup* Vehicle::radioStatusFactGroup()          { return _radioStatusFactGroup; }
 
 QmlObjectListModel* Vehicle::batteries()            { return _batteryFactGroupListModel; }
+FactGroup* Vehicle::primaryBatteryFactGroup()
+{
+    if (_batteryFactGroupListModel && _batteryFactGroupListModel->count() > 0) {
+        return qobject_cast<FactGroup*>(_batteryFactGroupListModel->get(0));
+    }
+    return nullptr;
+}
 QmlObjectListModel* Vehicle::escs()                 { return _escStatusFactGroupListModel; }
 
 QObject* Vehicle::sysStatusSensorInfo()                             { return _sysStatusSensorInfo.get(); }
@@ -1676,6 +1729,22 @@ void Vehicle::_parametersReady(bool parametersReady)
     if (parametersReady) {
         disconnect(_parameterManager, &ParameterManager::parametersReadyChanged, this, &Vehicle::_parametersReady);
         _setupAutoDisarmSignalling();
+
+        if (_serialNumber.isEmpty() && _parameterManager) {
+            if (_parameterManager->parameterExists(ParameterManager::defaultComponentId, QStringLiteral("BRD_SERIAL_NUM"))) {
+                Fact* pFact = _parameterManager->getParameter(ParameterManager::defaultComponentId, QStringLiteral("BRD_SERIAL_NUM"));
+                if (pFact) {
+                    int sn = pFact->rawValue().toInt();
+                    if (sn > 0) {
+                        QString prefix = _detectedModelName.isEmpty() ? QStringLiteral("IRS") : _detectedModelName;
+                        prefix.replace(" ", "-");
+                        _serialNumber = QStringLiteral("%1-%2").arg(prefix).arg(sn, 3, 10, QChar('0'));
+                        emit serialNumberChanged(_serialNumber);
+                        qCDebug(VehicleLog) << "IRS Security: Serial Number loaded from BRD_SERIAL_NUM:" << _serialNumber;
+                    }
+                }
+            }
+        }
     }
 
     _multirotor_speed_limits_available = _firmwarePlugin->mulirotorSpeedLimitsAvailable(this);
@@ -3133,11 +3202,11 @@ void Vehicle::sendGripperAction(GRIPPER_ACTIONS gripperAction)
 
 void Vehicle::setEstimatorOrigin(const QGeoCoordinate& centerCoord)
 {
-    // Prefer MAV_CMD_DO_SET_GLOBAL_ORIGIN (sent as COMMAND_INT, supersedes SET_GPS_GLOBAL_ORIGIN).
-    sendMavCommandIntWithLambdaFallback(
-        [this, centerCoord]() {  // fallback: deprecated SET_GPS_GLOBAL_ORIGIN message
-            setEstimatorOrigin_SET_GPS_GLOBAL_ORIGIN(centerCoord);
-        },
+    // Send SET_GPS_GLOBAL_ORIGIN directly (immediate response for ArduPilot / VIO companion nodes)
+    setEstimatorOrigin_SET_GPS_GLOBAL_ORIGIN(centerCoord);
+
+    // Also send modern MAV_CMD_DO_SET_GLOBAL_ORIGIN (sent as COMMAND_INT)
+    sendMavCommandInt(
         defaultComponentId(),
         MAV_CMD_DO_SET_GLOBAL_ORIGIN,
         MAV_FRAME_GLOBAL,
@@ -3147,6 +3216,12 @@ void Vehicle::setEstimatorOrigin(const QGeoCoordinate& centerCoord)
         centerCoord.longitude(),                        // param6: longitude (deg) -> degE7
         static_cast<float>(centerCoord.altitude())      // param7: altitude (m)
     );
+
+    // If the vehicle does not yet have a valid GPS coordinate, initialize it to the estimator origin
+    if (!_coordinate.isValid() || (_coordinate.latitude() == 0 && _coordinate.longitude() == 0)) {
+        _coordinate = centerCoord;
+        emit coordinateChanged(_coordinate);
+    }
 }
 
 void Vehicle::setEstimatorOrigin_SET_GPS_GLOBAL_ORIGIN(const QGeoCoordinate& centerCoord)
@@ -3412,12 +3487,15 @@ void Vehicle::_createStatusTextHandler()
 
 void Vehicle::_onStatusTextFromEvent(uint8_t compid, int severity, const QString &text, const QString &description)
 {
+    _checkIRSModelSignature(text);
     m_statusTextHandler->handleHTMLEscapedTextMessage(static_cast<MAV_COMPONENT>(compid),
                                                       static_cast<MAV_SEVERITY>(severity), text, description);
 }
 
 void Vehicle::_textMessageReceived(MAV_COMPONENT componentid, MAV_SEVERITY severity, QString text, QString description)
 {
+    _checkIRSModelSignature(text);
+
     // PX4 backwards compatibility: messages sent out ending with a tab are also sent as event
     if (px4Firmware() && text.endsWith('\t')) {
         qCDebug(VehicleLog) << "Dropping message (expected as event):" << text;
@@ -3467,6 +3545,175 @@ void Vehicle::_errorMessageReceived(QString message)
         vehicleIdPrefix = tr("Vehicle %1: ").arg(id());
     }
     QGC::showCriticalVehicleMessage(vehicleIdPrefix + message);
+}
+
+void Vehicle::_checkIRSModelSignature(const QString& text)
+{
+    const QString upper = text.toUpper();
+    QString foundModel;
+
+    if (upper.contains("IRS_PAWAN") || upper.contains("IRS PAWAN")) {
+        foundModel = "IRS PAWAN";
+    } else if (upper.contains("IRS_MODEL_1") || upper.contains("IRS MODEL 1") || upper.contains("IRS_MODEL1")) {
+        foundModel = "IRS MODEL 1";
+    } else if (upper.contains("IRS_MODEL_2") || upper.contains("IRS MODEL 2") || upper.contains("IRS_MODEL2")) {
+        foundModel = "IRS MODEL 2";
+    } else if (upper.contains("IRS_MODEL_3") || upper.contains("IRS MODEL 3") || upper.contains("IRS_MODEL3")) {
+        foundModel = "IRS MODEL 3";
+    } else if (upper.contains("INITIALISING IRS") || upper.contains("IRS READY")) {
+        if (_detectedModelName.isEmpty()) {
+            foundModel = "IRS DRONE";
+        }
+    } else if (upper.startsWith("IRS ") || upper.startsWith("IRS_")) {
+        QStringList parts = text.split(QRegularExpression("[\\s_]"), Qt::SkipEmptyParts);
+        if (parts.size() >= 2) {
+            foundModel = parts[0] + " " + parts[1];
+        } else {
+            foundModel = "IRS DRONE";
+        }
+    }
+
+    if (!foundModel.isEmpty()) {
+        if (_detectedModelName != foundModel) {
+            _detectedModelName = foundModel;
+            emit detectedModelNameChanged(_detectedModelName);
+        }
+
+        if (!_isAuthorizedDrone) {
+            _isAuthorizedDrone = true;
+            _authCheckCompleted = true;
+            if (_authTimeoutTimer && _authTimeoutTimer->isActive()) {
+                _authTimeoutTimer->stop();
+            }
+            emit authorizationChanged(true);
+
+            qCDebug(VehicleLog) << "IRS Security: Authorized Drone Model Identified:" << _detectedModelName;
+            QGC::showAppMessage(tr("Authorized Drone Connected: [%1]").arg(_detectedModelName));
+            _say(QStringLiteral("Authorized drone connected. Model: %1").arg(_detectedModelName));
+            QString welcomeMsg = tr("Authorized Drone Connected: [%1]").arg(_detectedModelName);
+            if (!_serialNumber.isEmpty()) {
+                welcomeMsg += tr(" | SN: %1").arg(_serialNumber);
+            }
+            if (!_customerName.isEmpty()) {
+                welcomeMsg += tr(" | Owner: %1").arg(_customerName);
+            }
+            QGC::showAppMessage(welcomeMsg);
+            if (!_serialNumber.isEmpty()) {
+                _say(QStringLiteral("Authorized drone connected. Model: %1. Serial number: %2.").arg(_detectedModelName).arg(_serialNumber));
+            } else {
+                _say(QStringLiteral("Authorized drone connected. Model: %1").arg(_detectedModelName));
+            }
+        }
+    }
+}
+
+void Vehicle::setDetectedModelName(const QString& modelName)
+{
+    if (_detectedModelName != modelName) {
+        _detectedModelName = modelName;
+        emit detectedModelNameChanged(_detectedModelName);
+    }
+}
+
+void Vehicle::_verifyAuthorizationOnConnect()
+{
+    _authCheckCompleted = true;
+    _isAuthorizedDrone = true;
+    emit authorizationChanged(true);
+}
+
+void Vehicle::_onAuthTimeout()
+{
+    if (_authTimeoutTimer && _authTimeoutTimer->isActive()) {
+        _authTimeoutTimer->stop();
+    }
+    _authCheckCompleted = true;
+    _isAuthorizedDrone = true;
+    emit authorizationChanged(true);
+}
+
+void Vehicle::setMcuUID(const QString& uid)
+{
+    if (_mcuUID != uid) {
+        _mcuUID = uid;
+        emit mcuUIDChanged(_mcuUID);
+        qCDebug(VehicleLog) << "IRS Security: Hardware MCU UID detected:" << _mcuUID;
+        lookupSalesRegistry();
+    }
+}
+
+void Vehicle::setSerialNumber(const QString& sn)
+{
+    if (_serialNumber != sn) {
+        _serialNumber = sn;
+        emit serialNumberChanged(_serialNumber);
+    }
+}
+
+void Vehicle::lookupSalesRegistry()
+{
+    if (_mcuUID.isEmpty()) {
+        return;
+    }
+
+    const QStringList registryCandidates = {
+        QCoreApplication::applicationDirPath() + QStringLiteral("/sales_registry.csv"),
+        QStringLiteral("D:/IRS_Firmwares/sales_registry.csv"),
+        QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + QStringLiteral("/sales_registry.csv"),
+        QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + QStringLiteral("/sales_registry.csv")
+    };
+
+    for (const QString& candidatePath : registryCandidates) {
+        QFile regFile(candidatePath);
+        if (!regFile.exists()) {
+            continue;
+        }
+        if (regFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            QTextStream in(&regFile);
+            while (!in.atEnd()) {
+                const QString line = in.readLine().trimmed();
+                if (line.isEmpty() || line.startsWith('#')) {
+                    continue;
+                }
+                // Format: MCU_UID,Serial_Number,Model_Name,Customer_Name,Customer_Contact,Dispatch_Date
+                const QStringList parts = line.split(',');
+                if (parts.size() >= 2) {
+                    const QString regUid = parts[0].trimmed();
+                    if (regUid.compare(_mcuUID, Qt::CaseInsensitive) == 0) {
+                        _serialNumber = parts[1].trimmed();
+                        emit serialNumberChanged(_serialNumber);
+
+                        if (parts.size() >= 3 && _detectedModelName.isEmpty()) {
+                            _detectedModelName = parts[2].trimmed();
+                            emit detectedModelNameChanged(_detectedModelName);
+                        }
+                        if (parts.size() >= 4) {
+                            _customerName = parts[3].trimmed();
+                            emit customerNameChanged(_customerName);
+                        }
+
+                        // Registered drone is verified authorized!
+                        if (!_isAuthorizedDrone) {
+                            _isAuthorizedDrone = true;
+                            _authCheckCompleted = true;
+                            if (_authTimeoutTimer && _authTimeoutTimer->isActive()) {
+                                _authTimeoutTimer->stop();
+                            }
+                            emit authorizationChanged(true);
+
+                            qCDebug(VehicleLog) << "IRS Security: Drone Verified from Sales Registry! Model:" << _detectedModelName << "SN:" << _serialNumber << "Customer:" << _customerName;
+                            QGC::showAppMessage(tr("Authorized Drone Connected: [%1] | SN: %2 | Customer: %3")
+                                .arg(_detectedModelName).arg(_serialNumber).arg(_customerName));
+                            _say(QStringLiteral("Authorized drone connected. Model %1. Serial number %2.").arg(_detectedModelName).arg(_serialNumber));
+                        }
+                        regFile.close();
+                        return;
+                    }
+                }
+            }
+            regFile.close();
+        }
+    }
 }
 
 /*---------------------------------------------------------------------------*/

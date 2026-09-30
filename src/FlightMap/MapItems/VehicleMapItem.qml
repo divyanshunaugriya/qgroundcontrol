@@ -9,6 +9,8 @@ import QGroundControl.Controls
 MapQuickItem {
     id: _root
 
+    QGCPalette { id: qgcPal; colorGroupEnabled: enabled }
+
     property var    vehicle                                                         /// Vehicle object
     property var    map
     property double heading:        vehicle ? vehicle.heading.value : Number.NaN    ///< Vehicle heading, NAN for none
@@ -112,6 +114,47 @@ MapQuickItem {
             text:                       visible && vehicle ? qsTr("Vehicle %1").arg(vehicle.id) : ""
             font.pointSize:             ScreenTools.smallFontPointSize
             visible:                    _multiVehicle
+        }
+
+        Rectangle {
+            id:                         vehicleCoordBadge
+            anchors.top:                vehicleLabel.visible ? vehicleLabel.bottom : vehicleIcon.bottom
+            anchors.topMargin:          2
+            anchors.horizontalCenter:   parent.horizontalCenter
+            width:                      vehicleCoordCol.width + (ScreenTools.defaultFontPixelWidth * 1.4)
+            height:                     vehicleCoordCol.height + (ScreenTools.defaultFontPixelHeight * 0.5)
+            radius:                     ScreenTools.defaultFontPixelWidth * 0.3
+            color:                      "#E60B0E14"
+            border.color:               "#00E5FF"
+            border.width:               1
+            visible:                    vehicle && vehicle.coordinate && vehicle.coordinate.isValid
+
+            Column {
+                id:                     vehicleCoordCol
+                anchors.centerIn:       parent
+                spacing:                1
+
+                QGCLabel {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text:           vehicle && vehicle.coordinate.isValid ? QGroundControl.coordinateToFormattedLatLon(vehicle.coordinate, 5) : ""
+                    font.family:    ScreenTools.fixedPitchFontFamily
+                    font.pointSize: ScreenTools.smallFontPointSize * 0.8
+                    font.bold:      true
+                    color:          "#FFFFFF"
+                    visible:        QGroundControl.coordinateDisplayMode === 0 || QGroundControl.coordinateDisplayMode === 2
+                }
+
+                QGCLabel {
+                    readonly property string _mgrs: vehicle && vehicle.coordinate.isValid ? QGroundControl.coordinateToMGRS(vehicle.coordinate) : ""
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text:           qsTr("GR: %1").arg(_mgrs)
+                    font.family:    ScreenTools.fixedPitchFontFamily
+                    font.pointSize: ScreenTools.smallFontPointSize * 0.8
+                    font.bold:      true
+                    color:          "#00E5FF"
+                    visible:        (QGroundControl.coordinateDisplayMode === 1 || QGroundControl.coordinateDisplayMode === 2) && _mgrs.length > 0
+                }
+            }
         }
     }
 }
