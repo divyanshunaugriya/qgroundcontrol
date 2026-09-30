@@ -1,11 +1,11 @@
 {
-  "versionCode": 7,
-  "versionName": "1.0.6",
+  "versionCode": 8,
+  "versionName": "1.0.7",
   "releaseDate": "2026-09-30",
   "minSupportedVersion": 1,
-  "apkUrl": "https://github.com/divyanshunaugriya/IRS_ALEX_GCS_CUSTOM/releases/download/v1.0.6/IRS_Alex_GCS_signed.apk",
-  "assetApiUrl": "https://api.github.com/repos/divyanshunaugriya/IRS_ALEX_GCS_CUSTOM/releases/assets/pending",
+  "apkUrl": "https://github.com/divyanshunaugriya/IRS_ALEX_GCS_CUSTOM/releases/download/v1.0.7/IRS_Alex_GCS_signed.apk",
+  "assetApiUrl": "https://api.github.com/repos/divyanshunaugriya/IRS_ALEX_GCS_CUSTOM/releases/assets/601252611",
   "title": "IRS GCS Software Update Available",
-  "releaseNotes": "\u2022 Post-Login Aircraft Hub: \u2600\ufe0f/\ud83c\udf19 Day & Night Theme Toggle\\n\u2022 Pre-Flight Health Strip (Sensors, GPS Fix, Battery Voltage & %)\\n\u2022 \ud83e\udded Calibrate Sensors Quick Tile for rapid compass/IMU alignment\\n\u2022 \ud83d\udc64 Interactive Operator Profile & Security Credentials Dialog\\n\u2022 Release v1.0.6 Stabilization",
+  "releaseNotes": "\u2022 \ud83d\udd10 Cryptographic MAVLink 2 Signing: Hardcoded Nextkick 256-bit Master Key auto-provisioning for tamper-proof wireless link with IRS PAWAN.\n\u2022 \ud83d\udef8 Dual Aircraft Architecture: Streamlined Hub displaying strictly IRS PAWAN and IRS VAYU.\n\u2022 \u2728 Zero-Box Floating Visuals: High-definition transparent aircraft models with soft dynamic drop-shadows.\n\u2022 \u26a1 1-Tap Connection Sheets: Skydroid T10 Bluetooth Scanner & Connect sheet for PAWAN; SIYI MK15 (UDP 14550) & Skydroid G12 (Serial 57600) sheet for VAYU.\n\u2022 \ud83d\udee1\ufe0f DGCA UAS Security Compliance: Operator station HWID credentials and crypto-session status indicators.",
   "forceUpdate": false
 }
