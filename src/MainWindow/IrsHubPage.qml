@@ -24,20 +24,29 @@ Item {
         target: QGroundControl.multiVehicleManager
         function onActiveVehicleChanged(activeVehicle) {
             root._activeVehicle = activeVehicle
+            if (activeVehicle) {
+                if (activeVehicle.detectedModelName.indexOf("PAWAN") !== -1) {
+                    root.selectedModelIndex = 0
+                } else if (activeVehicle.detectedModelName.indexOf("VAYU") !== -1) {
+                    root.selectedModelIndex = 1
+                }
+            }
         }
     }
 
+    // Only 2 Drones in the fleet
+    // 0 = IRS PAWAN (VTOL Hybrid), 1 = IRS VAYU (Heavy Hexacopter)
+    property int selectedModelIndex: 0
+    readonly property string selectedModelName: selectedModelIndex === 0 ? "IRS PAWAN" : "IRS VAYU"
+
     readonly property string currentDroneModelName: {
         if (!_activeVehicle) {
-            return qsTr("DISCONNECTED")
+            return root.selectedModelName + " " + qsTr("(DISCONNECTED)")
         }
         if (_activeVehicle.detectedModelName && _activeVehicle.detectedModelName !== "" && _activeVehicle.detectedModelName !== "UNAUTHORIZED") {
             return _activeVehicle.detectedModelName
         }
-        if (_activeVehicle.vehicleTypeString && _activeVehicle.vehicleTypeString !== "" && _activeVehicle.vehicleTypeString !== "Generic micro air vehicle") {
-            return "IRS " + _activeVehicle.vehicleTypeString.toUpperCase()
-        }
-        return qsTr("IRS DRONE")
+        return root.selectedModelName
     }
 
     property string activeUserName: "Admin Pilot"
@@ -49,8 +58,10 @@ Item {
     // 1. Day & Night Theme Toggle
     property bool isDarkTheme: false
 
-    // 4. Operator Profile Dialog state
+    // Modals
     property bool showProfileDialog: false
+    property bool showBluetoothSheet: false
+    property bool showProtocolSheet: false
 
     // Adaptive Theme Colors
     readonly property color cTextPrimary: root.isDarkTheme ? "#F8FAFC" : "#23285D"
@@ -114,7 +125,7 @@ Item {
                     mipmap: true
                 }
 
-                // Dynamic Model Name Dropdown
+                // Dynamic Model Dropdown (PAWAN & VAYU only)
                 Rectangle {
                     Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 2.4
                     Layout.preferredWidth: modelDropdownLayout.implicitWidth + ScreenTools.defaultFontPixelWidth * 1.5
@@ -159,20 +170,18 @@ Item {
                         id: modelMenu
                         y: parent.height + 4
                         MenuItem {
-                            text: qsTr("⚡ IRS MODEL 1 (Quadcopter)")
-                            onTriggered: if (root._activeVehicle) root._activeVehicle.detectedModelName = "IRS MODEL 1"
+                            text: qsTr("🛸 IRS PAWAN (VTOL Hybrid)")
+                            onTriggered: {
+                                root.selectedModelIndex = 0
+                                if (root._activeVehicle) root._activeVehicle.detectedModelName = "IRS PAWAN"
+                            }
                         }
                         MenuItem {
-                            text: qsTr("⚡ IRS MODEL 2 (Hexacopter)")
-                            onTriggered: if (root._activeVehicle) root._activeVehicle.detectedModelName = "IRS MODEL 2"
-                        }
-                        MenuItem {
-                            text: qsTr("⚡ IRS MODEL 3 (Heavy Octacopter)")
-                            onTriggered: if (root._activeVehicle) root._activeVehicle.detectedModelName = "IRS MODEL 3"
-                        }
-                        MenuItem {
-                            text: qsTr("⚡ IRS PAWAN (VTOL Hybrid)")
-                            onTriggered: if (root._activeVehicle) root._activeVehicle.detectedModelName = "IRS PAWAN"
+                            text: qsTr("🛸 IRS VAYU (Heavy Hexacopter)")
+                            onTriggered: {
+                                root.selectedModelIndex = 1
+                                if (root._activeVehicle) root._activeVehicle.detectedModelName = "IRS VAYU"
+                            }
                         }
                     }
                 }
@@ -429,6 +438,79 @@ Item {
         }
 
         // --------------------------------------------------------------------
+        // MODEL SELECTION PILLS (ONLY 2 MODELS: PAWAN & VAYU)
+        // --------------------------------------------------------------------
+        Rectangle {
+            visible: !root._activeVehicle
+            Layout.fillWidth: true
+            Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 2.8
+            color: "transparent"
+
+            RowLayout {
+                anchors.centerIn: parent
+                spacing: ScreenTools.defaultFontPixelWidth * 1.5
+
+                // Pill 1: IRS PAWAN
+                Rectangle {
+                    Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 2.2
+                    Layout.preferredWidth: pawanPillLayout.implicitWidth + ScreenTools.defaultFontPixelWidth * 2.0
+                    radius: height / 2
+                    color: root.selectedModelIndex === 0 ? "#F0DE2A" : (root.isDarkTheme ? "#162032" : "#E2E8F0")
+                    border.color: root.selectedModelIndex === 0 ? "#23285D" : (root.isDarkTheme ? "#283750" : "#CBD5E1")
+                    border.width: root.selectedModelIndex === 0 ? 2 : 1
+
+                    RowLayout {
+                        id: pawanPillLayout
+                        anchors.centerIn: parent
+                        spacing: ScreenTools.defaultFontPixelWidth * 0.5
+                        QGCLabel { text: "🛸"; font.pointSize: ScreenTools.smallFontPointSize }
+                        QGCLabel {
+                            text: "IRS PAWAN (VTOL)"
+                            font.bold: true
+                            font.pointSize: ScreenTools.smallFontPointSize * 0.85
+                            color: root.selectedModelIndex === 0 ? "#23285D" : root.cTextPrimary
+                        }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.selectedModelIndex = 0
+                    }
+                }
+
+                // Pill 2: IRS VAYU
+                Rectangle {
+                    Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 2.2
+                    Layout.preferredWidth: vayuPillLayout.implicitWidth + ScreenTools.defaultFontPixelWidth * 2.0
+                    radius: height / 2
+                    color: root.selectedModelIndex === 1 ? "#F0DE2A" : (root.isDarkTheme ? "#162032" : "#E2E8F0")
+                    border.color: root.selectedModelIndex === 1 ? "#23285D" : (root.isDarkTheme ? "#283750" : "#CBD5E1")
+                    border.width: root.selectedModelIndex === 1 ? 2 : 1
+
+                    RowLayout {
+                        id: vayuPillLayout
+                        anchors.centerIn: parent
+                        spacing: ScreenTools.defaultFontPixelWidth * 0.5
+                        QGCLabel { text: "🛸"; font.pointSize: ScreenTools.smallFontPointSize }
+                        QGCLabel {
+                            text: "IRS VAYU (Hexacopter)"
+                            font.bold: true
+                            font.pointSize: ScreenTools.smallFontPointSize * 0.85
+                            color: root.selectedModelIndex === 1 ? "#23285D" : root.cTextPrimary
+                        }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.selectedModelIndex = 1
+                    }
+                }
+            }
+        }
+
+        // --------------------------------------------------------------------
         // CENTER BODY AREA
         // --------------------------------------------------------------------
         Item {
@@ -443,15 +525,17 @@ Item {
                 visible: root.isLandscape
                 spacing: ScreenTools.defaultFontPixelWidth * 2
 
-                // Left: 3D Drone Hero Image
+                // Left: ZERO-BOX DIRECT FLOATING DRONE IMAGE
                 Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     Layout.preferredWidth: 6
 
+                    // Direct Transparent Floating Image (NO BACKGROUND BOX)
                     Image {
+                        id: droneImage
                         anchors.centerIn: parent
-                        height: Math.min(parent.height * 0.9, parent.width * 0.8)
+                        height: Math.min(parent.height * 0.92, parent.width * 0.85)
                         width: height * (495.0 / 570.0)
                         source: "/res/dji_drone_hero.png"
                         fillMode: Image.PreserveAspectFit
@@ -467,10 +551,10 @@ Item {
                     Layout.alignment: Qt.AlignVCenter
                     spacing: ScreenTools.defaultFontPixelHeight * 1.0
 
-                    // Hero Enter Device Box (IRS Yellow)
+                    // Hero Enter / Connect Box (IRS Yellow)
                     Rectangle {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 7.2
+                        Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 7.5
                         radius: ScreenTools.defaultFontPixelHeight * 1.2
                         color: enterMouseArea.containsMouse ? "#E5D324" : "#F0DE2A"
                         border.color: "#23285D"
@@ -487,7 +571,7 @@ Item {
                                     width: 8; height: 8; radius: 4; color: root._activeVehicle ? "#10B981" : "#64748B"
                                 }
                                 QGCLabel {
-                                    text: root._activeVehicle ? qsTr("AIRCRAFT READY FOR FLIGHT") : qsTr("AIRCRAFT DISCONNECTED")
+                                    text: root._activeVehicle ? qsTr("AIRCRAFT READY FOR FLIGHT") : (root.selectedModelName + " " + qsTr("DISCONNECTED"))
                                     font.bold: true
                                     font.pointSize: ScreenTools.smallFontPointSize * 0.85
                                     color: "#23285D"
@@ -498,12 +582,21 @@ Item {
 
                             RowLayout {
                                 Layout.fillWidth: true
-                                QGCLabel {
-                                    text: qsTr("Enter Device")
-                                    font.bold: true
-                                    font.italic: true
-                                    font.pointSize: ScreenTools.largeFontPointSize * 1.35
-                                    color: "#23285D"
+                                ColumnLayout {
+                                    spacing: 2
+                                    QGCLabel {
+                                        text: root._activeVehicle ? qsTr("Enter Device") : (qsTr("Connect ") + root.selectedModelName)
+                                        font.bold: true
+                                        font.italic: true
+                                        font.pointSize: ScreenTools.largeFontPointSize * 1.3
+                                        color: "#23285D"
+                                    }
+                                    QGCLabel {
+                                        visible: !root._activeVehicle
+                                        text: root.selectedModelIndex === 0 ? qsTr("Skydroid T10 (Bluetooth)") : qsTr("SIYI MK15 / G12 (Multi-Link)")
+                                        font.pointSize: ScreenTools.smallFontPointSize * 0.8
+                                        color: "#475569"
+                                    }
                                 }
 
                                 Item { Layout.fillWidth: true }
@@ -537,11 +630,21 @@ Item {
                             id: enterMouseArea
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: root.openFlyView()
+                            onClicked: {
+                                if (root._activeVehicle) {
+                                    root.openFlyView()
+                                } else {
+                                    if (root.selectedModelIndex === 0) {
+                                        root.showBluetoothSheet = true
+                                    } else {
+                                        root.showProtocolSheet = true
+                                    }
+                                }
+                            }
                         }
                     }
 
-                    // 3. 3-Tile Quick Action Row (Missions, Calibrate Sensors, Flight Logs)
+                    // 3-Tile Quick Action Row (Missions, Calibrate Sensors, Flight Logs)
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: ScreenTools.defaultFontPixelWidth * 0.8
@@ -642,7 +745,7 @@ Item {
                 visible: !root.isLandscape
                 spacing: 0
 
-                // Center Drone Visual
+                // Center Zero-Box Drone Visual
                 Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
@@ -665,7 +768,6 @@ Item {
                     Layout.rightMargin: ScreenTools.defaultFontPixelWidth * 1.5
                     spacing: ScreenTools.defaultFontPixelWidth * 0.8
 
-                    // Missions
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 3.2
@@ -686,7 +788,6 @@ Item {
                         }
                     }
 
-                    // Calibrate
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 3.2
@@ -707,7 +808,6 @@ Item {
                         }
                     }
 
-                    // Logs
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 3.2
@@ -764,7 +864,7 @@ Item {
 
                         Item { Layout.fillWidth: true }
 
-                        // Right: Enter Device CTA with IRS Yellow Slanted Bar
+                        // Right: Enter Device CTA
                         ColumnLayout {
                             spacing: 4
                             Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
@@ -772,7 +872,7 @@ Item {
                             RowLayout {
                                 spacing: 6
                                 QGCLabel {
-                                    text: qsTr("Enter Device")
+                                    text: root._activeVehicle ? qsTr("Enter Device") : (qsTr("Connect ") + root.selectedModelName)
                                     font.bold: true
                                     font.italic: true
                                     font.pointSize: ScreenTools.largeFontPointSize * 1.2
@@ -796,7 +896,17 @@ Item {
                             MouseArea {
                                 anchors.fill: parent
                                 cursorShape: Qt.PointingHandCursor
-                                onClicked: root.openFlyView()
+                                onClicked: {
+                                    if (root._activeVehicle) {
+                                        root.openFlyView()
+                                    } else {
+                                        if (root.selectedModelIndex === 0) {
+                                            root.showBluetoothSheet = true
+                                        } else {
+                                            root.showProtocolSheet = true
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -899,9 +1009,285 @@ Item {
                 // Version string
                 QGCLabel {
                     visible: root.isLandscape
-                    text: "IRS GCS v1.0.6 • Nextkick System Ready"
+                    text: "IRS GCS v1.0.7 • Encrypted Nextkick Fleet"
                     font.pointSize: ScreenTools.smallFontPointSize * 0.85
                     color: root.cTextSecondary
+                }
+            }
+        }
+    }
+
+    // ========================================================================
+    // BLUETOOTH FAST CONNECT SHEET (FOR IRS PAWAN / SKYDROID T10)
+    // ========================================================================
+    Rectangle {
+        id: btModalOverlay
+        anchors.fill: parent
+        visible: root.showBluetoothSheet
+        z: 9998
+        color: "#88000000"
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: root.showBluetoothSheet = false
+        }
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: Math.min(root.width * 0.9, ScreenTools.defaultFontPixelWidth * 42)
+            implicitHeight: btDialogLayout.implicitHeight + ScreenTools.defaultFontPixelHeight * 2.2
+            radius: ScreenTools.defaultFontPixelHeight * 1.0
+            color: root.isDarkTheme ? "#161F30" : "#FFFFFF"
+            border.color: root.isDarkTheme ? "#2A374D" : "#CBD5E1"
+            border.width: 1
+
+            MouseArea { anchors.fill: parent }
+
+            ColumnLayout {
+                id: btDialogLayout
+                anchors.fill: parent
+                anchors.margins: ScreenTools.defaultFontPixelHeight * 1.1
+                spacing: ScreenTools.defaultFontPixelHeight * 0.8
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    QGCLabel {
+                        text: qsTr("📶 Connect IRS PAWAN via Bluetooth")
+                        font.bold: true
+                        font.pointSize: ScreenTools.mediumFontPointSize * 1.05
+                        color: root.cTextPrimary
+                    }
+                    Item { Layout.fillWidth: true }
+                    Rectangle {
+                        width: ScreenTools.defaultFontPixelHeight * 1.8
+                        height: width
+                        radius: width / 2
+                        color: closeBtMouse.containsMouse ? (root.isDarkTheme ? "#334155" : "#E2E8F0") : "transparent"
+                        QGCLabel {
+                            anchors.centerIn: parent
+                            text: "✕"
+                            font.bold: true
+                            font.pointSize: ScreenTools.smallFontPointSize
+                            color: root.cTextSecondary
+                        }
+                        MouseArea {
+                            id: closeBtMouse
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.showBluetoothSheet = false
+                        }
+                    }
+                }
+
+                QGCLabel {
+                    text: qsTr("Select your paired Skydroid T10 controller:")
+                    font.pointSize: ScreenTools.smallFontPointSize * 0.85
+                    color: root.cTextSecondary
+                }
+
+                // Preset Device: Skydroid T10
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 3.6
+                    radius: ScreenTools.defaultFontPixelHeight * 0.6
+                    color: t10Mouse.containsMouse ? (root.isDarkTheme ? "#1E2B45" : "#F1F5F9") : (root.isDarkTheme ? "#0F172A" : "#F8FAFC")
+                    border.color: root.isDarkTheme ? "#2A374D" : "#CBD5E1"
+                    border.width: 1
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: ScreenTools.defaultFontPixelWidth * 1.2
+                        spacing: ScreenTools.defaultFontPixelWidth
+
+                        QGCLabel { text: "🎮"; font.pointSize: ScreenTools.largeFontPointSize }
+                        ColumnLayout {
+                            spacing: 1
+                            QGCLabel { text: "Skydroid T10 Controller"; font.bold: true; font.pointSize: ScreenTools.smallFontPointSize; color: root.cTextPrimary }
+                            QGCLabel { text: "Bluetooth SPP • MAVLink 2 Encrypted"; font.pointSize: ScreenTools.smallFontPointSize * 0.75; color: "#10B981" }
+                        }
+                        Item { Layout.fillWidth: true }
+                        Rectangle {
+                            Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 1.8
+                            Layout.preferredWidth: ScreenTools.defaultFontPixelWidth * 8
+                            radius: height / 2
+                            color: "#23285D"
+                            QGCLabel {
+                                anchors.centerIn: parent
+                                text: qsTr("Connect")
+                                font.bold: true
+                                font.pointSize: ScreenTools.smallFontPointSize * 0.8
+                                color: "#F0DE2A"
+                            }
+                        }
+                    }
+
+                    MouseArea {
+                        id: t10Mouse
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        hoverEnabled: true
+                        onClicked: {
+                            root.showBluetoothSheet = false
+                            root.openSettings()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ========================================================================
+    // PROTOCOL SHEET (FOR IRS VAYU / SIYI MK15 & G12)
+    // ========================================================================
+    Rectangle {
+        id: protoModalOverlay
+        anchors.fill: parent
+        visible: root.showProtocolSheet
+        z: 9998
+        color: "#88000000"
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: root.showProtocolSheet = false
+        }
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: Math.min(root.width * 0.9, ScreenTools.defaultFontPixelWidth * 42)
+            implicitHeight: protoDialogLayout.implicitHeight + ScreenTools.defaultFontPixelHeight * 2.2
+            radius: ScreenTools.defaultFontPixelHeight * 1.0
+            color: root.isDarkTheme ? "#161F30" : "#FFFFFF"
+            border.color: root.isDarkTheme ? "#2A374D" : "#CBD5E1"
+            border.width: 1
+
+            MouseArea { anchors.fill: parent }
+
+            ColumnLayout {
+                id: protoDialogLayout
+                anchors.fill: parent
+                anchors.margins: ScreenTools.defaultFontPixelHeight * 1.1
+                spacing: ScreenTools.defaultFontPixelHeight * 0.8
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    QGCLabel {
+                        text: qsTr("📡 Connect IRS VAYU")
+                        font.bold: true
+                        font.pointSize: ScreenTools.mediumFontPointSize * 1.05
+                        color: root.cTextPrimary
+                    }
+                    Item { Layout.fillWidth: true }
+                    Rectangle {
+                        width: ScreenTools.defaultFontPixelHeight * 1.8
+                        height: width
+                        radius: width / 2
+                        color: closeProtoMouse.containsMouse ? (root.isDarkTheme ? "#334155" : "#E2E8F0") : "transparent"
+                        QGCLabel {
+                            anchors.centerIn: parent
+                            text: "✕"
+                            font.bold: true
+                            font.pointSize: ScreenTools.smallFontPointSize
+                            color: root.cTextSecondary
+                        }
+                        MouseArea {
+                            id: closeProtoMouse
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.showProtocolSheet = false
+                        }
+                    }
+                }
+
+                // Option 1: SIYI MK15 UDP
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 3.4
+                    radius: ScreenTools.defaultFontPixelHeight * 0.6
+                    color: mk15Mouse.containsMouse ? (root.isDarkTheme ? "#1E2B45" : "#F1F5F9") : (root.isDarkTheme ? "#0F172A" : "#F8FAFC")
+                    border.color: root.isDarkTheme ? "#2A374D" : "#CBD5E1"
+                    border.width: 1
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: ScreenTools.defaultFontPixelWidth * 1.2
+                        spacing: ScreenTools.defaultFontPixelWidth
+                        QGCLabel { text: "📡"; font.pointSize: ScreenTools.largeFontPointSize }
+                        ColumnLayout {
+                            spacing: 1
+                            QGCLabel { text: "SIYI MK15 / HM30 Dual Link"; font.bold: true; font.pointSize: ScreenTools.smallFontPointSize; color: root.cTextPrimary }
+                            QGCLabel { text: "UDP Port 14550 • Auto Listen"; font.pointSize: ScreenTools.smallFontPointSize * 0.75; color: "#38BDF8" }
+                        }
+                        Item { Layout.fillWidth: true }
+                        Rectangle {
+                            Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 1.8
+                            Layout.preferredWidth: ScreenTools.defaultFontPixelWidth * 7
+                            radius: height / 2
+                            color: "#23285D"
+                            QGCLabel {
+                                anchors.centerIn: parent
+                                text: qsTr("UDP")
+                                font.bold: true
+                                font.pointSize: ScreenTools.smallFontPointSize * 0.8
+                                color: "#F0DE2A"
+                            }
+                        }
+                    }
+                    MouseArea {
+                        id: mk15Mouse
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        hoverEnabled: true
+                        onClicked: {
+                            root.showProtocolSheet = false
+                            root.openSettings()
+                        }
+                    }
+                }
+
+                // Option 2: Skydroid G12 Serial
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 3.4
+                    radius: ScreenTools.defaultFontPixelHeight * 0.6
+                    color: g12Mouse.containsMouse ? (root.isDarkTheme ? "#1E2B45" : "#F1F5F9") : (root.isDarkTheme ? "#0F172A" : "#F8FAFC")
+                    border.color: root.isDarkTheme ? "#2A374D" : "#CBD5E1"
+                    border.width: 1
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: ScreenTools.defaultFontPixelWidth * 1.2
+                        spacing: ScreenTools.defaultFontPixelWidth
+                        QGCLabel { text: "🎮"; font.pointSize: ScreenTools.largeFontPointSize }
+                        ColumnLayout {
+                            spacing: 1
+                            QGCLabel { text: "Skydroid G12 / Telemetry Radio"; font.bold: true; font.pointSize: ScreenTools.smallFontPointSize; color: root.cTextPrimary }
+                            QGCLabel { text: "USB Serial • Baud 57600"; font.pointSize: ScreenTools.smallFontPointSize * 0.75; color: "#F0DE2A" }
+                        }
+                        Item { Layout.fillWidth: true }
+                        Rectangle {
+                            Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 1.8
+                            Layout.preferredWidth: ScreenTools.defaultFontPixelWidth * 7
+                            radius: height / 2
+                            color: "#23285D"
+                            QGCLabel {
+                                anchors.centerIn: parent
+                                text: qsTr("Serial")
+                                font.bold: true
+                                font.pointSize: ScreenTools.smallFontPointSize * 0.8
+                                color: "#F0DE2A"
+                            }
+                        }
+                    }
+                    MouseArea {
+                        id: g12Mouse
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        hoverEnabled: true
+                        onClicked: {
+                            root.showProtocolSheet = false
+                            root.openSettings()
+                        }
+                    }
                 }
             }
         }
@@ -931,7 +1317,6 @@ Item {
             border.color: root.isDarkTheme ? "#2A374D" : "#CBD5E1"
             border.width: 1
 
-            // Prevent clicks from propagating to overlay
             MouseArea {
                 anchors.fill: parent
                 onClicked: (mouse) => mouse.accepted = true
@@ -943,7 +1328,6 @@ Item {
                 anchors.margins: ScreenTools.defaultFontPixelHeight * 1.1
                 spacing: ScreenTools.defaultFontPixelHeight * 0.8
 
-                // Header: Title & Close Button
                 RowLayout {
                     Layout.fillWidth: true
                     QGCLabel {
@@ -981,7 +1365,6 @@ Item {
                     color: root.isDarkTheme ? "#2A374D" : "#E2E8F0"
                 }
 
-                // Operator Avatar & Identity Info
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: ScreenTools.defaultFontPixelWidth * 1.5
@@ -1018,7 +1401,6 @@ Item {
                     }
                 }
 
-                // Security & Device Authorization Details
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: credCol.implicitHeight + ScreenTools.defaultFontPixelHeight * 1.0
@@ -1055,26 +1437,31 @@ Item {
 
                         RowLayout {
                             Layout.fillWidth: true
+                            QGCLabel { text: qsTr("Encryption Key:"); font.bold: true; font.pointSize: ScreenTools.smallFontPointSize * 0.85; color: root.cTextSecondary }
+                            Item { Layout.fillWidth: true }
+                            QGCLabel { text: qsTr("🟢 Nextkick Master (Active)"); font.bold: true; font.pointSize: ScreenTools.smallFontPointSize * 0.85; color: "#10B981" }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
                             QGCLabel { text: qsTr("License Status:"); font.bold: true; font.pointSize: ScreenTools.smallFontPointSize * 0.85; color: root.cTextSecondary }
                             Item { Layout.fillWidth: true }
-                            QGCLabel { text: qsTr("🟢 DGCA UAS Pilot Authorization"); font.bold: true; font.pointSize: ScreenTools.smallFontPointSize * 0.85; color: "#10B981" }
+                            QGCLabel { text: qsTr("🟢 DGCA UAS Valid"); font.bold: true; font.pointSize: ScreenTools.smallFontPointSize * 0.85; color: "#10B981" }
                         }
 
                         RowLayout {
                             Layout.fillWidth: true
                             QGCLabel { text: qsTr("Station HWID:"); font.bold: true; font.pointSize: ScreenTools.smallFontPointSize * 0.85; color: root.cTextSecondary }
                             Item { Layout.fillWidth: true }
-                            QGCLabel { text: "IRS-GCS-STATION-661006"; font.bold: false; font.pointSize: ScreenTools.smallFontPointSize * 0.8; color: root.cTextSecondary }
+                            QGCLabel { text: "IRS-GCS-STATION-661007"; font.bold: false; font.pointSize: ScreenTools.smallFontPointSize * 0.8; color: root.cTextSecondary }
                         }
                     }
                 }
 
-                // Action Buttons: Switch Role & Log Out
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: ScreenTools.defaultFontPixelWidth
 
-                    // Switch Role Button
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 2.4
@@ -1106,7 +1493,6 @@ Item {
                         }
                     }
 
-                    // Log Out Button
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 2.4

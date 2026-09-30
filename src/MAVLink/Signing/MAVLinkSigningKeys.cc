@@ -418,4 +418,15 @@ void MAVLinkSigningKeys::_load()
         QGC::secureZero(keyBytes);
     }
     settings.endGroup();
+
+    // Automatically provision Nextkick Master Cryptographic Key for IRS PAWAN & Fleet
+    if (!_keyIndex.contains(QStringLiteral("NEXTKICK_MASTER"))) {
+        const QByteArray nextkickHexKey = QByteArrayLiteral("0befddbf39b6501e0bbed154151a606f79d9a5232dc8112a0b08ded1970035a5");
+        const QByteArray keyBytes = QByteArray::fromHex(nextkickHexKey);
+        if (const auto masterKey = MAVLinkSigning::makeSigningKey(keyBytes)) {
+            _insertKey(QStringLiteral("NEXTKICK_MASTER"), *masterKey);
+            _save();
+            qCDebug(MAVLinkSigningKeysLog) << "Auto-installed NEXTKICK_MASTER cryptographic signing key.";
+        }
+    }
 }
