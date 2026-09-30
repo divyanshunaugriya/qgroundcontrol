@@ -1,0 +1,11 @@
+{
+  "versionCode": 4,
+  "versionName": "1.0.3",
+  "releaseDate": "2026-09-30",
+  "minSupportedVersion": 1,
+  "apkUrl": "https://github.com/divyanshunaugriya/IRS_ALEX_GCS_CUSTOM/releases/download/v1.0.3/IRS_Alex_GCS_signed.apk",
+  "assetApiUrl": "https://api.github.com/repos/divyanshunaugriya/IRS_ALEX_GCS_CUSTOM/releases/assets/600355409",
+  "title": "IRS GCS Software Update Available",
+  "releaseNotes": "• Option 1: Minimalist Tactical Zero-Scroll Login & Registration UI\n• Combined Brand Emblem & Tab Bar in Single Header\n• 2-Column Responsive Layout for Mobile Displays\n• In-App Direct APK Streaming\n• Automatic on-screen package installer",
+  "forceUpdate": false
+}

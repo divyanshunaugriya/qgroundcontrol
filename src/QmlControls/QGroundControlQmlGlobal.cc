@@ -25,14 +25,30 @@
 #include "MockLink.h"
 #endif
 
+#include <QtCore/QDir>
+#include <QtCore/QFile>
 #include <QtCore/QLineF>
 #include <QtCore/QSettings>
+#include <QtCore/QStandardPaths>
+#include <QtCore/QSysInfo>
+#include <QtCore/QUrl>
 #include <QtGui/QClipboard>
 #include <QtGui/QGuiApplication>
+#include <QtNetwork/QNetworkAccessManager>
+#include <QtNetwork/QNetworkReply>
+#include <QtNetwork/QNetworkRequest>
+
+#ifdef Q_OS_ANDROID
+#include <QtCore/QJniEnvironment>
+#include <QtCore/QJniObject>
+#endif
 
 #include "qgc_version.h"
 
+#include "QGCGeo.h"
 #include "QGCLoggingCategory.h"
+
+#include <cmath>
 
 QGC_LOGGING_CATEGORY(GuidedActionsControllerLog, "QMLControls.GuidedActionsController")
 
@@ -360,6 +376,77 @@ void QGroundControlQmlGlobal::copyToClipboard(const QString& text)
     QGuiApplication::clipboard()->setText(text);
 }
 
+QString QGroundControlQmlGlobal::coordinateToMGRS(const QGeoCoordinate& coord)
+{
+    if (!coord.isValid() || std::isnan(coord.latitude()) || std::isnan(coord.longitude())) {
+        return QString();
+    }
+    return QGCGeo::convertGeoToMGRS(coord);
+}
+
+QString QGroundControlQmlGlobal::coordinateToFormattedLatLon(const QGeoCoordinate& coord, int decimalPlaces)
+{
+    if (!coord.isValid() || std::isnan(coord.latitude()) || std::isnan(coord.longitude())) {
+        return QString();
+    }
+    const double lat = coord.latitude();
+    const double lon = coord.longitude();
+    const QChar latDir = (lat >= 0.0) ? QLatin1Char('N') : QLatin1Char('S');
+    const QChar lonDir = (lon >= 0.0) ? QLatin1Char('E') : QLatin1Char('W');
+    return QStringLiteral("%1° %2, %3° %4")
+        .arg(QString::number(std::abs(lat), 'f', decimalPlaces))
+        .arg(latDir)
+        .arg(QString::number(std::abs(lon), 'f', decimalPlaces))
+        .arg(lonDir);
+}
+
+void QGroundControlQmlGlobal::setCoordinateDisplayMode(int mode)
+{
+    if (mode < 0 || mode > 2) {
+        mode = CoordinateDisplayBoth;
+    }
+    if (_coordinateDisplayMode != mode) {
+        _coordinateDisplayMode = mode;
+        QSettings settings;
+        settings.setValue(QStringLiteral("IRSCoordinateDisplayMode"), _coordinateDisplayMode);
+        emit coordinateDisplayModeChanged(_coordinateDisplayMode);
+    }
+}
+
+void QGroundControlQmlGlobal::cycleCoordinateDisplayMode()
+{
+    setCoordinateDisplayMode((_coordinateDisplayMode + 1) % 3);
+}
+
+QString QGroundControlQmlGlobal::coordinateDisplayModeName() const
+{
+    switch (_coordinateDisplayMode) {
+    case CoordinateDisplayLatLon: return QStringLiteral("LAT / LON");
+    case CoordinateDisplayGR:     return QStringLiteral("GR");
+    case CoordinateDisplayBoth:   return QStringLiteral("BOTH");
+    default:                      return QStringLiteral("BOTH");
+    }
+}
+
+QString QGroundControlQmlGlobal::formatCoordinate(const QGeoCoordinate& coord) const
+{
+    if (!coord.isValid() || std::isnan(coord.latitude()) || std::isnan(coord.longitude())) {
+        return QStringLiteral("--");
+    }
+    const QString latLon = coordinateToFormattedLatLon(coord, 6);
+    const QString gr = coordinateToMGRS(coord);
+
+    switch (_coordinateDisplayMode) {
+    case CoordinateDisplayLatLon:
+        return latLon;
+    case CoordinateDisplayGR:
+        return gr.isEmpty() ? latLon : (QStringLiteral("GR: ") + gr);
+    case CoordinateDisplayBoth:
+    default:
+        return gr.isEmpty() ? latLon : (latLon + QStringLiteral("  |  GR: ") + gr);
+    }
+}
+
 QString QGroundControlQmlGlobal::elevationProviderName()
 {
     return _settingsManager->flightMapSettings()->elevationMapProvider()->rawValue().toString();
@@ -384,3 +471,186 @@ QString QGroundControlQmlGlobal::appName()
 {
     return QCoreApplication::applicationName();
 }
+
+QString QGroundControlQmlGlobal::machineUniqueId()
+{
+    QByteArray id = QSysInfo::machineUniqueId();
+    if (id.isEmpty()) {
+        id = QSysInfo::bootUniqueId();
+    }
+    if (id.isEmpty()) {
+        id = QSysInfo::machineHostName().toUtf8();
+    }
+    return QString::fromLatin1(id.toHex().toUpper());
+}
+
+void QGroundControlQmlGlobal::cancelAppUpdate()
+{
+    if (_updateReply) {
+        _updateReply->abort();
+        _updateReply->deleteLater();
+        _updateReply = nullptr;
+    }
+    if (_updateFile) {
+        if (_updateFile->isOpen()) {
+            _updateFile->close();
+        }
+        delete _updateFile;
+        _updateFile = nullptr;
+    }
+}
+
+void QGroundControlQmlGlobal::startAppUpdate(const QString& assetApiUrl, const QString& token)
+{
+    cancelAppUpdate();
+
+    if (!_updateNetMgr) {
+        _updateNetMgr = new QNetworkAccessManager(this);
+    }
+
+    QString targetDir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+    if (targetDir.isEmpty()) {
+        targetDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+    }
+    QDir().mkpath(targetDir);
+    QString targetFilePath = QDir(targetDir).filePath(QStringLiteral("IRS_Alex_GCS_update.apk"));
+
+    QFile::remove(targetFilePath);
+
+    _updateFile = new QFile(targetFilePath, this);
+    if (!_updateFile->open(QIODevice::WriteOnly)) {
+        emit appUpdateError(QStringLiteral("Cannot create temporary update file: %1").arg(_updateFile->errorString()));
+        delete _updateFile;
+        _updateFile = nullptr;
+        return;
+    }
+
+    _updateLastBytes = 0;
+    _updateLastTimeMs = 0;
+    _updateTimer.restart();
+
+    QUrl initialUrl(assetApiUrl.trimmed());
+    _startDownloadReply(initialUrl, !token.isEmpty(), token, targetFilePath);
+}
+
+void QGroundControlQmlGlobal::_startDownloadReply(const QUrl& url, bool withAuth, const QString& token, const QString& filePath)
+{
+    QNetworkRequest request(url);
+    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::ManualRedirectPolicy);
+    request.setRawHeader("User-Agent", "IRS-AlexGCS-Updater");
+    request.setRawHeader("Accept", "application/octet-stream");
+
+    if (withAuth && !token.isEmpty()) {
+        request.setRawHeader("Authorization", QStringLiteral("Bearer %1").arg(token).toUtf8());
+    }
+
+    _updateReply = _updateNetMgr->get(request);
+
+    connect(_updateReply, &QNetworkReply::downloadProgress, this, [this](qint64 bytesReceived, qint64 bytesTotal) {
+        qint64 currentElapsed = _updateTimer.elapsed();
+        qint64 deltaMs = currentElapsed - _updateLastTimeMs;
+        qint64 speed = 0;
+        if (deltaMs >= 500) {
+            qint64 deltaBytes = bytesReceived - _updateLastBytes;
+            if (deltaMs > 0) {
+                speed = (deltaBytes * 1000) / deltaMs;
+            }
+            _updateLastBytes = bytesReceived;
+            _updateLastTimeMs = currentElapsed;
+        }
+        emit appUpdateProgress(bytesReceived, bytesTotal, speed);
+    });
+
+    connect(_updateReply, &QNetworkReply::readyRead, this, [this]() {
+        if (_updateReply && _updateFile && _updateFile->isOpen()) {
+            _updateFile->write(_updateReply->readAll());
+        }
+    });
+
+    connect(_updateReply, &QNetworkReply::finished, this, [this, token, filePath]() {
+        if (!_updateReply) return;
+
+        QNetworkReply* reply = _updateReply;
+        _updateReply = nullptr;
+        reply->deleteLater();
+
+        if (reply->error() == QNetworkReply::OperationCanceledError) {
+            if (_updateFile && _updateFile->isOpen()) {
+                _updateFile->close();
+            }
+            return;
+        }
+
+        int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        QVariant redirectVar = reply->attribute(QNetworkRequest::RedirectionTargetAttribute);
+
+        if (statusCode >= 300 && statusCode < 400 && !redirectVar.isNull()) {
+            QUrl redirectUrl = reply->url().resolved(redirectVar.toUrl());
+            // Follow redirect without Auth header (Azure / AWS S3 does not allow Authorization header)
+            _startDownloadReply(redirectUrl, false, QString(), filePath);
+            return;
+        }
+
+        if (reply->error() != QNetworkReply::NoError) {
+            if (_updateFile && _updateFile->isOpen()) {
+                _updateFile->close();
+            }
+            emit appUpdateError(QStringLiteral("Download failed: %1 (HTTP %2)").arg(reply->errorString()).arg(statusCode));
+            return;
+        }
+
+        if (_updateFile && _updateFile->isOpen()) {
+            _updateFile->write(reply->readAll());
+            _updateFile->flush();
+            _updateFile->close();
+        }
+
+        emit appUpdateFinished(filePath);
+
+#ifdef Q_OS_ANDROID
+        QJniObject jFilePath = QJniObject::fromString(filePath);
+        QJniObject::callStaticMethod<void>(
+            "org/mavlink/qgroundcontrol/QGCActivity",
+            "installApk",
+            "(Ljava/lang/String;)V",
+            jFilePath.object<jstring>()
+        );
+#endif
+    });
+}
+
+void QGroundControlQmlGlobal::installDownloadedApk()
+{
+    QString targetDir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+    if (targetDir.isEmpty()) {
+        targetDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+    }
+    QString targetFilePath = QDir(targetDir).filePath(QStringLiteral("IRS_Alex_GCS_update.apk"));
+    if (!QFile::exists(targetFilePath)) {
+        emit appUpdateError(QStringLiteral("Update APK file not found on device. Please download again."));
+        return;
+    }
+
+#ifdef Q_OS_ANDROID
+    QJniObject jFilePath = QJniObject::fromString(targetFilePath);
+    QJniObject::callStaticMethod<void>(
+        "org/mavlink/qgroundcontrol/QGCActivity",
+        "installApk",
+        "(Ljava/lang/String;)V",
+        jFilePath.object<jstring>()
+    );
+#endif
+}
+
+bool QGroundControlQmlGlobal::isUpdateDownloaded() const
+{
+    QString targetDir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+    if (targetDir.isEmpty()) {
+        targetDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+    }
+    QString targetFilePath = QDir(targetDir).filePath(QStringLiteral("IRS_Alex_GCS_update.apk"));
+    QFileInfo fi(targetFilePath);
+    return fi.exists() && fi.size() > 10000000;
+}
+
+

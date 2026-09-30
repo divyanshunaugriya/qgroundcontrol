@@ -2,6 +2,7 @@
 
 #include <QtCore/QPointF>
 #include <QtCore/QTimer>
+#include <QtCore/QElapsedTimer>
 #include <QtPositioning/QGeoCoordinate>
 #include <QtQml/QJSValue>
 #include <QtQmlIntegration/QtQmlIntegration>
@@ -22,6 +23,9 @@ class QGCPositionManager;
 class SettingsManager;
 class VideoManager;
 class QmlObjectListModel;
+class QNetworkAccessManager;
+class QNetworkReply;
+class QFile;
 
 Q_MOC_INCLUDE("ADSBVehicleManager.h")
 Q_MOC_INCLUDE("NTRIPManager.h")
@@ -149,6 +153,37 @@ public:
     /// Copy text to the system clipboard
     Q_INVOKABLE static void copyToClipboard(const QString& text);
 
+    /// Convert geodetic coordinate to MGRS / Grid Reference (GR) string
+    Q_INVOKABLE static QString coordinateToMGRS(const QGeoCoordinate& coord);
+
+    enum CoordinateDisplayMode {
+        CoordinateDisplayLatLon = 0,
+        CoordinateDisplayGR,
+        CoordinateDisplayBoth
+    };
+    Q_ENUM(CoordinateDisplayMode)
+
+    Q_PROPERTY(int coordinateDisplayMode READ coordinateDisplayMode WRITE setCoordinateDisplayMode NOTIFY coordinateDisplayModeChanged)
+
+    Q_INVOKABLE void cycleCoordinateDisplayMode();
+    Q_INVOKABLE QString formatCoordinate(const QGeoCoordinate& coord) const;
+    Q_INVOKABLE QString coordinateDisplayModeName() const;
+
+    int coordinateDisplayMode() const { return _coordinateDisplayMode; }
+    void setCoordinateDisplayMode(int mode);
+
+    /// Format geodetic coordinate as clean Lat / Lon string
+    Q_INVOKABLE static QString coordinateToFormattedLatLon(const QGeoCoordinate& coord, int decimalPlaces = 6);
+
+    /// Return the unique machine hardware identifier (HWID)
+    Q_INVOKABLE static QString machineUniqueId();
+
+    /// In-app direct OTA APK download & installation
+    Q_INVOKABLE void startAppUpdate(const QString& assetApiUrl, const QString& token);
+    Q_INVOKABLE void cancelAppUpdate();
+    Q_INVOKABLE void installDownloadedApk();
+    Q_INVOKABLE bool isUpdateDownloaded() const;
+
     // Property accessors
 
     static QString appName();
@@ -205,9 +240,23 @@ signals:
     void mavlinkSystemIDChanged         (int id);
     void flightMapPositionChanged       (QGeoCoordinate flightMapPosition);
     void flightMapZoomChanged           (double flightMapZoom);
+    void coordinateDisplayModeChanged   (int mode);
+    void appUpdateProgress              (qint64 receivedBytes, qint64 totalBytes, qint64 speedBytesPerSec);
+    void appUpdateFinished              (const QString& filePath);
+    void appUpdateError                 (const QString& errorMessage);
     void showMessageDialogRequested     (QObject* owner, QString title, QString text, int buttons, QJSValue acceptFunction, QJSValue closeFunction);
 
 private:
+    void _startDownloadReply(const QUrl& url, bool withAuth, const QString& token, const QString& filePath);
+
+    QNetworkAccessManager*  _updateNetMgr           = nullptr;
+    QNetworkReply*          _updateReply            = nullptr;
+    QFile*                  _updateFile             = nullptr;
+    QElapsedTimer           _updateTimer;
+    qint64                  _updateLastBytes        = 0;
+    qint64                  _updateLastTimeMs       = 0;
+
+    int                     _coordinateDisplayMode  = CoordinateDisplayBoth;
     QGCMapEngineManager*    _mapEngineManager       = nullptr;
     ADSBVehicleManager*     _adsbVehicleManager     = nullptr;
     NTRIPManager*           _ntripManager           = nullptr;

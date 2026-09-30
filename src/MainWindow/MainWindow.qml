@@ -17,6 +17,7 @@ import QGroundControl.Toolbar
 ApplicationWindow {
     id:         mainWindow
     visible:    true
+    title:      qsTr("Alex GCS")
     // The special casing for android prevents white bars from showing up on the edges of the screen with newer android versions
     flags:      Qt.Window | (ScreenTools.isAndroid ? Qt.ExpandedClientAreaHint | Qt.NoTitleBarBackgroundHint : 0)
 
@@ -31,6 +32,7 @@ ApplicationWindow {
     Component.onCompleted: {
         // Start the sequence of first run prompt(s)
         firstRunPromptManager.nextPrompt()
+        // First run prompts will trigger after operator logs in
     }
 
     /// Saves main window position and size and re-opens it in the same position and size next time
@@ -142,6 +144,11 @@ ApplicationWindow {
     function showFlyView() {
         flyView.visible = true
         planView.visible = false
+        toolDrawer.visible = false
+    }
+
+    function showHubPage() {
+        hubPage.visible = true
         toolDrawer.visible = false
     }
 
@@ -337,6 +344,73 @@ ApplicationWindow {
         objectName:     "mainView_plan"
         anchors.fill:   parent
         visible:        false
+    }
+
+    // ------------------------------------------------------------------------
+    // IRS Splash Screen & Operator Authentication (Session Auto-Lock)
+    // ------------------------------------------------------------------------
+    property bool _operatorAuthenticated: false
+
+    IrsHubPage {
+        id:                 hubPage
+        anchors.fill:       parent
+        visible:            _operatorAuthenticated
+        z:                  99990
+        onOpenFlyView: {
+            hubPage.visible = false
+            showFlyView()
+        }
+        onOpenPlanView: {
+            hubPage.visible = false
+            showPlanView()
+        }
+        onOpenAnalyzeView: {
+            hubPage.visible = false
+            showAnalyzeTool()
+        }
+        onOpenVehicleConfig: {
+            hubPage.visible = false
+            showVehicleConfig()
+        }
+        onOpenSettings: {
+            hubPage.visible = false
+            showSettingsTool()
+        }
+        onLogoutRequested: {
+            hubPage.visible = false
+            _operatorAuthenticated = false
+            loginOverlay.visible = true
+        }
+    }
+
+    LoginPage {
+        id:                 loginOverlay
+        anchors.fill:       parent
+        visible:            !_operatorAuthenticated
+        z:                  99998
+        onLoginSuccessful: (user, role) => {
+            _operatorAuthenticated = true
+            loginOverlay.visible = false
+            hubPage.activeUserName = user
+            hubPage.activeUserRole = role
+            hubPage.visible = true
+            firstRunPromptManager.nextPrompt()
+        }
+    }
+
+    IrsSplashScreen {
+        id:                 splashOverlay
+        anchors.fill:       parent
+        visible:            true
+        z:                  99999
+        onSplashCompleted: {
+            splashOverlay.visible = false
+            if (!_operatorAuthenticated) {
+                loginOverlay.visible = true
+            } else {
+                hubPage.visible = true
+            }
+        }
     }
 
     footer: LogReplayStatusBar {

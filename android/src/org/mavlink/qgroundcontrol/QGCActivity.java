@@ -9,11 +9,15 @@ import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.OpenableColumns;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+import android.widget.Toast;
+import androidx.core.content.FileProvider;
 
 
 import org.qtproject.qt.android.bindings.QtActivity;
@@ -31,6 +35,10 @@ public class QGCActivity extends QtActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // Force Qt single-threaded render loop to avoid HWUI pthread_mutex crash on Android 14+
+        // The default threaded loop causes a destroyed-mutex SIGABRT in hwuiTask
+        System.setProperty("QSG_RENDER_LOOP", "basic");
+
         super.onCreate(savedInstanceState);
         m_instance = this;
 
@@ -146,7 +154,7 @@ public class QGCActivity extends QtActivity {
             if (cursor != null && cursor.moveToFirst()) {
                 final int nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
                 if (nameIndex >= 0) {
-                    displayName = cursor.getString(nameIndex);                    
+                    displayName = cursor.getString(nameIndex);
                     displayName = sanitizeFilename(displayName);
                 }
             }
@@ -290,6 +298,56 @@ public class QGCActivity extends QtActivity {
             intent.addCategory(Intent.CATEGORY_OPENABLE);
             intent.setType("*/*");
             m_instance.startActivityForResult(intent, IMPORT_FILE_REQUEST_CODE);
+        });
+    }
+
+    /**
+     * Launch native Android package installer for downloaded APK.
+     * Uses FileProvider for secure, modern Android package installation.
+     *
+     * @param filePath Absolute local file path of the downloaded APK.
+     */
+    public static void installApk(final String filePath) {
+        Log.i(TAG, "installApk invoked with filePath: " + filePath);
+        if (m_instance == null) {
+            Log.e(TAG, "Cannot install APK: Activity instance is null");
+            return;
+        }
+        m_instance.runOnUiThread(() -> {
+            try {
+                File apkFile = new File(filePath);
+                if (!apkFile.exists() || apkFile.length() < 1000) {
+                    Log.e(TAG, "APK file does not exist or empty: " + filePath);
+                    return;
+                }
+
+                Context context = m_instance.getApplicationContext();
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    if (!context.getPackageManager().canRequestPackageInstalls()) {
+                        Log.i(TAG, "Requesting ACTION_MANAGE_UNKNOWN_APP_SOURCES");
+                        Intent manageIntent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES);
+                        manageIntent.setData(Uri.parse("package:" + context.getPackageName()));
+                        manageIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        m_instance.startActivity(manageIntent);
+                        Toast.makeText(context, "Please allow 'Install unknown apps' for IRS GCS, then tap Install", Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                }
+
+                String authority = context.getPackageName() + ".qtprovider";
+                Uri apkUri = FileProvider.getUriForFile(context, authority, apkFile);
+
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+                m_instance.startActivity(intent);
+                Log.i(TAG, "Successfully launched native APK installer for: " + filePath);
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to launch native APK installer: " + e.getMessage(), e);
+            }
         });
     }
 
