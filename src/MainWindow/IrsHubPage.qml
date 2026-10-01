@@ -565,21 +565,21 @@ Item {
                     Layout.fillWidth: true
                     Layout.preferredWidth: 4
                     Layout.alignment: Qt.AlignVCenter
-                    spacing: ScreenTools.defaultFontPixelHeight * 1.0
+                    spacing: ScreenTools.defaultFontPixelHeight * (ScreenTools.isMobile ? 0.4 : 0.8)
 
                     // Hero Enter / Connect Box (IRS Yellow)
                     Rectangle {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 7.5
-                        radius: ScreenTools.defaultFontPixelHeight * 1.2
+                        Layout.preferredHeight: ScreenTools.isMobile ? ScreenTools.defaultFontPixelHeight * 4.6 : ScreenTools.defaultFontPixelHeight * 6.5
+                        radius: ScreenTools.defaultFontPixelHeight * (ScreenTools.isMobile ? 0.8 : 1.2)
                         color: enterMouseArea.containsMouse ? "#E5D324" : "#F0DE2A"
                         border.color: "#23285D"
                         border.width: 2
 
                         ColumnLayout {
                             anchors.fill: parent
-                            anchors.margins: ScreenTools.defaultFontPixelHeight * 0.9
-                            spacing: ScreenTools.defaultFontPixelHeight * 0.3
+                            anchors.margins: ScreenTools.defaultFontPixelHeight * (ScreenTools.isMobile ? 0.5 : 0.9)
+                            spacing: ScreenTools.defaultFontPixelHeight * 0.2
 
                             RowLayout {
                                 spacing: ScreenTools.defaultFontPixelWidth * 0.5
@@ -589,7 +589,7 @@ Item {
                                 QGCLabel {
                                     text: root._activeVehicle ? qsTr("AIRCRAFT READY FOR FLIGHT") : (root.selectedModelName + " " + qsTr("DISCONNECTED"))
                                     font.bold: true
-                                    font.pointSize: ScreenTools.smallFontPointSize * 0.85
+                                    font.pointSize: ScreenTools.smallFontPointSize * 0.8
                                     color: "#23285D"
                                 }
                             }
@@ -599,18 +599,18 @@ Item {
                             RowLayout {
                                 Layout.fillWidth: true
                                 ColumnLayout {
-                                    spacing: 2
+                                    spacing: 1
                                     QGCLabel {
                                         text: root._activeVehicle ? qsTr("Enter Device") : (qsTr("Connect ") + root.selectedModelName)
                                         font.bold: true
                                         font.italic: true
-                                        font.pointSize: ScreenTools.largeFontPointSize * 1.3
+                                        font.pointSize: ScreenTools.largeFontPointSize * (ScreenTools.isMobile ? 1.05 : 1.3)
                                         color: "#23285D"
                                     }
                                     QGCLabel {
                                         visible: !root._activeVehicle
                                         text: root.selectedModelIndex === 0 ? qsTr("Skydroid T10 (Bluetooth)") : qsTr("SIYI MK15 / G12 (Multi-Link)")
-                                        font.pointSize: ScreenTools.smallFontPointSize * 0.8
+                                        font.pointSize: ScreenTools.smallFontPointSize * 0.75
                                         color: "#475569"
                                     }
                                 }
@@ -618,16 +618,16 @@ Item {
                                 Item { Layout.fillWidth: true }
 
                                 Rectangle {
-                                    Layout.preferredWidth: ScreenTools.defaultFontPixelHeight * 2.8
-                                    Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 2.8
-                                    radius: ScreenTools.defaultFontPixelHeight * 0.7
+                                    Layout.preferredWidth: ScreenTools.defaultFontPixelHeight * (ScreenTools.isMobile ? 2.2 : 2.8)
+                                    Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * (ScreenTools.isMobile ? 2.2 : 2.8)
+                                    radius: ScreenTools.defaultFontPixelHeight * 0.6
                                     color: "#23285D"
 
                                     QGCLabel {
                                         anchors.centerIn: parent
                                         text: "➔"
                                         font.bold: true
-                                        font.pointSize: ScreenTools.largeFontPointSize
+                                        font.pointSize: ScreenTools.largeFontPointSize * (ScreenTools.isMobile ? 0.85 : 1.0)
                                         color: "#F0DE2A"
                                     }
                                 }
@@ -636,8 +636,8 @@ Item {
                             // Dark underline
                             Rectangle {
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: 3
-                                radius: 1.5
+                                Layout.preferredHeight: 2.5
+                                radius: 1.25
                                 color: "#23285D"
                             }
                         }
@@ -668,21 +668,21 @@ Item {
                         // Tile 1: Missions
                         Rectangle {
                             Layout.fillWidth: true
-                            Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 3.8
-                            radius: ScreenTools.defaultFontPixelHeight * 0.7
+                            Layout.preferredHeight: ScreenTools.isMobile ? ScreenTools.defaultFontPixelHeight * 2.5 : ScreenTools.defaultFontPixelHeight * 3.4
+                            radius: ScreenTools.defaultFontPixelHeight * 0.6
                             color: missionsArea.containsMouse ? root.cCardHover : root.cCardBg
                             border.color: missionsArea.containsMouse ? (root.isDarkTheme ? "#38BDF8" : "#23285D") : root.cCardBorder
                             border.width: 1
 
                             RowLayout {
                                 anchors.centerIn: parent
-                                spacing: ScreenTools.defaultFontPixelWidth * 0.8
+                                spacing: ScreenTools.defaultFontPixelWidth * 0.6
 
-                                QGCLabel { text: "🗺️"; font.pointSize: ScreenTools.mediumFontPointSize }
+                                QGCLabel { text: "🗺️"; font.pointSize: ScreenTools.isMobile ? ScreenTools.smallFontPointSize * 1.05 : ScreenTools.mediumFontPointSize }
                                 ColumnLayout {
                                     spacing: 1
-                                    QGCLabel { text: qsTr("Missions"); font.bold: true; font.pointSize: ScreenTools.smallFontPointSize; color: root.cTextPrimary }
-                                    QGCLabel { text: qsTr("Survey"); font.pointSize: ScreenTools.smallFontPointSize * 0.8; color: root.cTextSecondary }
+                                    QGCLabel { text: qsTr("Missions"); font.bold: true; font.pointSize: ScreenTools.smallFontPointSize * (ScreenTools.isMobile ? 0.85 : 1.0); color: root.cTextPrimary }
+                                    QGCLabel { text: qsTr("Survey"); font.pointSize: ScreenTools.smallFontPointSize * (ScreenTools.isMobile ? 0.7 : 0.8); color: root.cTextSecondary }
                                 }
                             }
 
@@ -697,21 +697,21 @@ Item {
                         // Tile 2: Calibrate Sensors
                         Rectangle {
                             Layout.fillWidth: true
-                            Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 3.8
-                            radius: ScreenTools.defaultFontPixelHeight * 0.7
+                            Layout.preferredHeight: ScreenTools.isMobile ? ScreenTools.defaultFontPixelHeight * 2.5 : ScreenTools.defaultFontPixelHeight * 3.4
+                            radius: ScreenTools.defaultFontPixelHeight * 0.6
                             color: calArea.containsMouse ? root.cCardHover : root.cCardBg
                             border.color: calArea.containsMouse ? (root.isDarkTheme ? "#38BDF8" : "#23285D") : root.cCardBorder
                             border.width: 1
 
                             RowLayout {
                                 anchors.centerIn: parent
-                                spacing: ScreenTools.defaultFontPixelWidth * 0.8
+                                spacing: ScreenTools.defaultFontPixelWidth * 0.6
 
-                                QGCLabel { text: root.isAdmin ? "🧭" : "🔒"; font.pointSize: ScreenTools.mediumFontPointSize }
+                                QGCLabel { text: root.isAdmin ? "🧭" : "🔒"; font.pointSize: ScreenTools.isMobile ? ScreenTools.smallFontPointSize * 1.05 : ScreenTools.mediumFontPointSize }
                                 ColumnLayout {
                                     spacing: 1
-                                    QGCLabel { text: root.isAdmin ? qsTr("Calibrate") : qsTr("Calibrate (Admin)"); font.bold: true; font.pointSize: ScreenTools.smallFontPointSize; color: root.cTextPrimary }
-                                    QGCLabel { text: root.isAdmin ? qsTr("Sensors") : qsTr("Admin Only"); font.pointSize: ScreenTools.smallFontPointSize * 0.8; color: root.cTextSecondary }
+                                    QGCLabel { text: root.isAdmin ? qsTr("Calibrate") : qsTr("Calibrate (Admin)"); font.bold: true; font.pointSize: ScreenTools.smallFontPointSize * (ScreenTools.isMobile ? 0.85 : 1.0); color: root.cTextPrimary }
+                                    QGCLabel { text: root.isAdmin ? qsTr("Sensors") : qsTr("Admin Only"); font.pointSize: ScreenTools.smallFontPointSize * (ScreenTools.isMobile ? 0.7 : 0.8); color: root.isAdmin ? root.cTextSecondary : "#EAB308" }
                                 }
                             }
 
@@ -732,21 +732,21 @@ Item {
                         // Tile 3: Flight Logs
                         Rectangle {
                             Layout.fillWidth: true
-                            Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 3.8
-                            radius: ScreenTools.defaultFontPixelHeight * 0.7
+                            Layout.preferredHeight: ScreenTools.isMobile ? ScreenTools.defaultFontPixelHeight * 2.5 : ScreenTools.defaultFontPixelHeight * 3.4
+                            radius: ScreenTools.defaultFontPixelHeight * 0.6
                             color: logsArea.containsMouse ? root.cCardHover : root.cCardBg
                             border.color: logsArea.containsMouse ? (root.isDarkTheme ? "#38BDF8" : "#23285D") : root.cCardBorder
                             border.width: 1
 
                             RowLayout {
                                 anchors.centerIn: parent
-                                spacing: ScreenTools.defaultFontPixelWidth * 0.8
+                                spacing: ScreenTools.defaultFontPixelWidth * 0.6
 
-                                QGCLabel { text: root.isAdmin ? "📋" : "🔒"; font.pointSize: ScreenTools.mediumFontPointSize }
+                                QGCLabel { text: root.isAdmin ? "📋" : "🔒"; font.pointSize: ScreenTools.isMobile ? ScreenTools.smallFontPointSize * 1.05 : ScreenTools.mediumFontPointSize }
                                 ColumnLayout {
                                     spacing: 1
-                                    QGCLabel { text: root.isAdmin ? qsTr("Logs") : qsTr("Logs (Admin)"); font.bold: true; font.pointSize: ScreenTools.smallFontPointSize; color: root.cTextPrimary }
-                                    QGCLabel { text: root.isAdmin ? qsTr("Replay") : qsTr("Admin Only"); font.pointSize: ScreenTools.smallFontPointSize * 0.8; color: root.cTextSecondary }
+                                    QGCLabel { text: root.isAdmin ? qsTr("Logs") : qsTr("Logs (Admin)"); font.bold: true; font.pointSize: ScreenTools.smallFontPointSize * (ScreenTools.isMobile ? 0.85 : 1.0); color: root.cTextPrimary }
+                                    QGCLabel { text: root.isAdmin ? qsTr("Replay") : qsTr("Admin Only"); font.pointSize: ScreenTools.smallFontPointSize * (ScreenTools.isMobile ? 0.7 : 0.8); color: root.isAdmin ? root.cTextSecondary : "#EAB308" }
                                 }
                             }
 
@@ -1049,7 +1049,7 @@ Item {
                 // Version string
                 QGCLabel {
                     visible: root.isLandscape
-                    text: "IRS GCS v1.0.7 • Encrypted Nextkick Fleet"
+                    text: "IRS GCS v1.1.0 • Encrypted Nextkick Fleet"
                     font.pointSize: ScreenTools.smallFontPointSize * 0.85
                     color: root.cTextSecondary
                 }

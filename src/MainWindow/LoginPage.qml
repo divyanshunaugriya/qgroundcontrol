@@ -30,8 +30,8 @@ Item {
     // =========================================================================
     // IN-APP AUTO-UPDATE CONFIGURATION & STATE
     // =========================================================================
-    readonly property int currentAppVersionCode: 10
-    readonly property string currentAppVersionName: "1.0.9"
+    readonly property int currentAppVersionCode: 11
+    readonly property string currentAppVersionName: "1.1.0"
 
     property bool isUpdateAvailable: false
     property var updateInfo: ({
@@ -1247,7 +1247,7 @@ Item {
 
         Rectangle {
             id: updateCard
-            width: Math.min(parent.width * 0.94, ScreenTools.defaultFontPixelWidth * 48)
+            width: Math.min(parent.width * 0.95, Math.max(ScreenTools.defaultFontPixelWidth * 64, 680))
             height: Math.min(parent.height * 0.94, updateContentCol.implicitHeight + ScreenTools.defaultFontPixelHeight * 2.0)
             anchors.centerIn: parent
             radius: ScreenTools.defaultFontPixelHeight * 0.5
@@ -1332,7 +1332,7 @@ Item {
                         Text {
                             text: qsTr("FIRMWARE & GCS SYSTEM UPDATE")
                             font.bold: true
-                            font.pixelSize: ScreenTools.defaultFontPixelHeight * 0.72
+                            font.pixelSize: ScreenTools.defaultFontPixelHeight * (ScreenTools.isMobile ? 0.62 : 0.72)
                             color: "#FFFFFF"
                         }
                     }
@@ -1359,9 +1359,11 @@ Item {
                 }
 
                 // Specs Matrix (4 Pillars)
-                RowLayout {
+                GridLayout {
                     Layout.fillWidth: true
-                    spacing: 8
+                    columns: (updateCard.width < 560) ? 2 : 4
+                    rowSpacing: 8
+                    columnSpacing: 8
 
                     // 1. Current Build
                     Rectangle {
