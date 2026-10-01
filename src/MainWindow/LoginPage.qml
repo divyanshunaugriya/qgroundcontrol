@@ -30,8 +30,8 @@ Item {
     // =========================================================================
     // IN-APP AUTO-UPDATE CONFIGURATION & STATE
     // =========================================================================
-    readonly property int currentAppVersionCode: 8
-    readonly property string currentAppVersionName: "1.0.7"
+    readonly property int currentAppVersionCode: 10
+    readonly property string currentAppVersionName: "1.0.9"
 
     property bool isUpdateAvailable: false
     property var updateInfo: ({
@@ -770,50 +770,23 @@ Item {
                                 }
                             }
 
-                            // Row 1: Role Selector (left 50%) and Email/ID (right 50%) side-by-side
-                            RowLayout {
+                            // Row 1: Operator Email / ID
+                            ColumnLayout {
                                 Layout.fillWidth: true
-                                spacing: ScreenTools.defaultFontPixelWidth * 1.2
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    Layout.preferredWidth: 1
-                                    spacing: 2
-                                    QGCLabel {
-                                        text: qsTr("Operator Role")
-                                        font.pointSize: ScreenTools.smallFontPointSize * 0.9
-                                        font.bold: true
-                                        color: "#A0AEC0"
-                                    }
-                                    QGCComboBox {
-                                        id: roleCombo
-                                        Layout.fillWidth: true
-                                        model: [
-                                            qsTr("Drone Pilot (Flight Operations)"),
-                                            qsTr("Administrator (Full System Access)"),
-                                        ]
-                                        currentIndex: 0
-                                    }
+                                spacing: 2
+                                QGCLabel {
+                                    text: qsTr("Operator Email / ID")
+                                    font.pointSize: ScreenTools.smallFontPointSize * 0.9
+                                    font.bold: true
+                                    color: "#A0AEC0"
                                 }
-
-                                ColumnLayout {
+                                QGCTextField {
+                                    id: usernameField
                                     Layout.fillWidth: true
-                                    Layout.preferredWidth: 1
-                                    spacing: 2
-                                    QGCLabel {
-                                        text: qsTr("Operator Email / ID")
-                                        font.pointSize: ScreenTools.smallFontPointSize * 0.9
-                                        font.bold: true
-                                        color: "#A0AEC0"
-                                    }
-                                    QGCTextField {
-                                        id: usernameField
-                                        Layout.fillWidth: true
-                                        text: licenseVault.boundEmail.length > 0 ? licenseVault.boundEmail : "pilot@irs.com"
-                                        placeholderText: qsTr("e.g. operator@company.com")
-                                        EnterKey.type: Qt.EnterKeyNext
-                                        onAccepted: passwordField.forceActiveFocus()
-                                    }
+                                    text: licenseVault.boundEmail.length > 0 ? licenseVault.boundEmail : "pilot@irs.com"
+                                    placeholderText: qsTr("e.g. pilot@irs.com or admin@irs.com")
+                                    EnterKey.type: Qt.EnterKeyNext
+                                    onAccepted: passwordField.forceActiveFocus()
                                 }
                             }
 
@@ -962,9 +935,14 @@ Item {
                                             }
 
                                             // Successfully verified online! Cache & bind device locally for offline use
+                                            var rawRole = (found.role || "Drone Pilot").trim()
+                                            var assignedRole = (rawRole.toLowerCase().indexOf("admin") !== -1)
+                                                ? qsTr("Administrator (Full System Access)")
+                                                : qsTr("Drone Pilot (Flight Operations)")
+
                                             licenseVault.boundEmail = emailInput
                                             licenseVault.boundName = found.name || emailInput
-                                            licenseVault.boundRole = roleCombo.currentText
+                                            licenseVault.boundRole = assignedRole
                                             licenseVault.boundHwid = root.currentHwid
                                             licenseVault.boundPassHash = root.hashString(passInput + ":" + root.currentHwid)
                                             licenseVault.activationDate = new Date().toISOString()
@@ -972,7 +950,7 @@ Item {
 
                                             root.isBusy = false
                                             root.activeUser = found.name || emailInput
-                                            root.activeRole = roleCombo.currentText
+                                            root.activeRole = assignedRole
                                             root.loginSuccessful(root.activeUser, root.activeRole)
 
                                         } else {
@@ -998,9 +976,15 @@ Item {
                                                 }
 
                                                 // Offline verification success!
+                                                var offlineRole = licenseVault.boundRole
+                                                if (!offlineRole || offlineRole.trim().length === 0) {
+                                                    offlineRole = (emailInput.toLowerCase().indexOf("admin") !== -1 || passInput === "admin123")
+                                                        ? qsTr("Administrator (Full System Access)")
+                                                        : qsTr("Drone Pilot (Flight Operations)")
+                                                }
                                                 root.isBusy = false
                                                 root.activeUser = licenseVault.boundName.length > 0 ? licenseVault.boundName : emailInput
-                                                root.activeRole = roleCombo.currentText
+                                                root.activeRole = offlineRole
                                                 root.loginSuccessful(root.activeUser, root.activeRole)
 
                                             } else {

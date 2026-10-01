@@ -160,20 +160,48 @@ ApplicationWindow {
         toolDrawer.visible      = true
     }
 
+    property string _activeOperatorRole: ""
+    readonly property bool isAdministrator: _activeOperatorRole.toLowerCase().indexOf("admin") !== -1
+
+    function showAccessRestrictedDialog(featureName) {
+        _showMessageDialogWorker(
+            mainWindow,
+            qsTr("Access Restricted"),
+            qsTr("Access to %1 is restricted to Administrator accounts.\n\nYour assigned role: %2\n\nUnder IRS Drone Operations policy, pilots are granted flight control and mission planning access only. Vehicle calibration, parameter tuning, and application settings require Administrator credentials.").arg(featureName).arg(_activeOperatorRole.length > 0 ? _activeOperatorRole : qsTr("Drone Pilot")),
+            Dialog.Ok
+        )
+    }
+
     function showAnalyzeTool() {
+        if (!isAdministrator) {
+            showAccessRestrictedDialog(qsTr("Analyze Tools"))
+            return
+        }
         showTool(qsTr("Analyze Tools"), "qrc:/qml/QGroundControl/AnalyzeView/AnalyzeView.qml", "/qmlimages/Analyze.svg")
     }
 
     function showVehicleConfig() {
+        if (!isAdministrator) {
+            showAccessRestrictedDialog(qsTr("Vehicle Configuration"))
+            return
+        }
         showTool(qsTr("Vehicle Configuration"), "qrc:/qml/QGroundControl/VehicleSetup/VehicleConfigView.qml", "/qmlimages/Gears.svg")
     }
 
     function showVehicleConfigParametersPage() {
+        if (!isAdministrator) {
+            showAccessRestrictedDialog(qsTr("Parameters"))
+            return
+        }
         showVehicleConfig()
         toolDrawerLoader.item.showParametersPanel()
     }
 
     function showKnownVehicleComponentConfigPage(knownVehicleComponent) {
+        if (!isAdministrator) {
+            showAccessRestrictedDialog(qsTr("Vehicle Setup"))
+            return
+        }
         showVehicleConfig()
         let vehicleComponent = globals.activeVehicle.autopilotPlugin.findKnownVehicleComponent(knownVehicleComponent)
         if (vehicleComponent) {
@@ -182,6 +210,10 @@ ApplicationWindow {
     }
 
     function showSettingsTool(settingsPage = "") {
+        if (!isAdministrator) {
+            showAccessRestrictedDialog(qsTr("Application Settings"))
+            return
+        }
         showTool(qsTr("Application Settings"), "qrc:/qml/QGroundControl/Controls/AppSettings.qml", "/res/QGCLogoWhite")
         if (settingsPage !== "") {
             toolDrawerLoader.item.showSettingsPage(settingsPage)
@@ -379,6 +411,7 @@ ApplicationWindow {
         onLogoutRequested: {
             hubPage.visible = false
             _operatorAuthenticated = false
+            _activeOperatorRole = ""
             loginOverlay.visible = true
         }
     }
@@ -390,6 +423,7 @@ ApplicationWindow {
         z:                  99998
         onLoginSuccessful: (user, role) => {
             _operatorAuthenticated = true
+            _activeOperatorRole = role
             loginOverlay.visible = false
             hubPage.activeUserName = user
             hubPage.activeUserRole = role

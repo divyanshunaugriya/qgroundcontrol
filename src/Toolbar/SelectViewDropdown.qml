@@ -64,7 +64,7 @@ ToolIndicatorPage {
                 Layout.fillWidth: true
                 text: qsTr("Analyze")
                 imageResource: "/qmlimages/Analyze.svg"
-                visible: QGroundControl.corePlugin.showAdvancedUI
+                visible: QGroundControl.corePlugin.showAdvancedUI && mainWindow.isAdministrator
                 onClicked: {
                     if (mainWindow.allowViewSwitch()) {
                         mainWindow.closeIndicatorDrawer()
@@ -80,6 +80,7 @@ ToolIndicatorPage {
                 Layout.fillWidth: true
                 text: qsTr("Configure")
                 imageResource: "/res/GearWithPaperPlane.svg"
+                visible: mainWindow.isAdministrator
                 onClicked: {
                     if (mainWindow.allowViewSwitch()) {
                         mainWindow.closeIndicatorDrawer()
@@ -95,7 +96,7 @@ ToolIndicatorPage {
                 Layout.fillWidth: true
                 text: qsTr("Settings")
                 imageResource: "/res/QGCLogoWhite.svg"
-                visible: !QGroundControl.corePlugin.options.combineSettingsAndSetup
+                visible: !QGroundControl.corePlugin.options.combineSettingsAndSetup && mainWindow.isAdministrator
                 onClicked: {
                     if (mainWindow.allowViewSwitch()) {
                         mainWindow.closeIndicatorDrawer()

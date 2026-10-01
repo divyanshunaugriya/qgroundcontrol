@@ -51,6 +51,15 @@ Item {
 
     property string activeUserName: "Admin Pilot"
     property string activeUserRole: "Flight Operations"
+    readonly property bool isAdmin: activeUserRole.toLowerCase().indexOf("admin") !== -1
+
+    function showAccessRestricted(featureName) {
+        mainWindow.showMessageDialog(
+            qsTr("Access Restricted"),
+            qsTr("Access to %1 is restricted to Administrator accounts.\n\nYour assigned role: %2\n\nUnder IRS Drone Operations policy, pilots are granted flight control and mission planning access only. Vehicle calibration, parameter tuning, and application settings require Administrator credentials.").arg(featureName).arg(activeUserRole),
+            Dialog.Ok
+        )
+    }
 
     // Responsive orientation detection
     readonly property bool isLandscape: root.width > root.height
@@ -306,9 +315,10 @@ Item {
                     }
                 }
 
-                // Settings Button
+                // Settings Button (Admin Only)
                 QGCToolBarButton {
                     id: menuBtn
+                    visible: root.isAdmin
                     icon.source: "/res/QGCLogoFull.svg"
                     Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 2.2
                     Layout.preferredWidth: Layout.preferredHeight
@@ -418,9 +428,9 @@ Item {
                         id: calLinkRow
                         anchors.centerIn: parent
                         spacing: ScreenTools.defaultFontPixelWidth * 0.4
-                        QGCLabel { text: "⚙️"; font.pointSize: ScreenTools.smallFontPointSize * 0.8 }
+                        QGCLabel { text: root.isAdmin ? "⚙️" : "🔒"; font.pointSize: ScreenTools.smallFontPointSize * 0.8 }
                         QGCLabel {
-                            text: qsTr("Diagnostics")
+                            text: root.isAdmin ? qsTr("Diagnostics") : qsTr("Diagnostics (Admin)")
                             font.bold: true
                             font.pointSize: ScreenTools.smallFontPointSize * 0.75
                             color: root.cTextPrimary
@@ -431,7 +441,13 @@ Item {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
                         hoverEnabled: true
-                        onClicked: root.openVehicleConfig()
+                        onClicked: {
+                            if (root.isAdmin) {
+                                root.openVehicleConfig()
+                            } else {
+                                root.showAccessRestricted(qsTr("Vehicle Diagnostics & Calibration"))
+                            }
+                        }
                     }
                 }
             }
@@ -691,11 +707,11 @@ Item {
                                 anchors.centerIn: parent
                                 spacing: ScreenTools.defaultFontPixelWidth * 0.8
 
-                                QGCLabel { text: "🧭"; font.pointSize: ScreenTools.mediumFontPointSize }
+                                QGCLabel { text: root.isAdmin ? "🧭" : "🔒"; font.pointSize: ScreenTools.mediumFontPointSize }
                                 ColumnLayout {
                                     spacing: 1
-                                    QGCLabel { text: qsTr("Calibrate"); font.bold: true; font.pointSize: ScreenTools.smallFontPointSize; color: root.cTextPrimary }
-                                    QGCLabel { text: qsTr("Sensors"); font.pointSize: ScreenTools.smallFontPointSize * 0.8; color: root.cTextSecondary }
+                                    QGCLabel { text: root.isAdmin ? qsTr("Calibrate") : qsTr("Calibrate (Admin)"); font.bold: true; font.pointSize: ScreenTools.smallFontPointSize; color: root.cTextPrimary }
+                                    QGCLabel { text: root.isAdmin ? qsTr("Sensors") : qsTr("Admin Only"); font.pointSize: ScreenTools.smallFontPointSize * 0.8; color: root.cTextSecondary }
                                 }
                             }
 
@@ -703,7 +719,13 @@ Item {
                                 id: calArea
                                 anchors.fill: parent
                                 cursorShape: Qt.PointingHandCursor
-                                onClicked: root.openVehicleConfig()
+                                onClicked: {
+                                    if (root.isAdmin) {
+                                        root.openVehicleConfig()
+                                    } else {
+                                        root.showAccessRestricted(qsTr("Vehicle Calibration & Setup"))
+                                    }
+                                }
                             }
                         }
 
@@ -720,11 +742,11 @@ Item {
                                 anchors.centerIn: parent
                                 spacing: ScreenTools.defaultFontPixelWidth * 0.8
 
-                                QGCLabel { text: "📋"; font.pointSize: ScreenTools.mediumFontPointSize }
+                                QGCLabel { text: root.isAdmin ? "📋" : "🔒"; font.pointSize: ScreenTools.mediumFontPointSize }
                                 ColumnLayout {
                                     spacing: 1
-                                    QGCLabel { text: qsTr("Logs"); font.bold: true; font.pointSize: ScreenTools.smallFontPointSize; color: root.cTextPrimary }
-                                    QGCLabel { text: qsTr("Replay"); font.pointSize: ScreenTools.smallFontPointSize * 0.8; color: root.cTextSecondary }
+                                    QGCLabel { text: root.isAdmin ? qsTr("Logs") : qsTr("Logs (Admin)"); font.bold: true; font.pointSize: ScreenTools.smallFontPointSize; color: root.cTextPrimary }
+                                    QGCLabel { text: root.isAdmin ? qsTr("Replay") : qsTr("Admin Only"); font.pointSize: ScreenTools.smallFontPointSize * 0.8; color: root.cTextSecondary }
                                 }
                             }
 
@@ -732,7 +754,13 @@ Item {
                                 id: logsArea
                                 anchors.fill: parent
                                 cursorShape: Qt.PointingHandCursor
-                                onClicked: root.openAnalyzeView()
+                                onClicked: {
+                                    if (root.isAdmin) {
+                                        root.openAnalyzeView()
+                                    } else {
+                                        root.showAccessRestricted(qsTr("Flight Logs & Analyze Tools"))
+                                    }
+                                }
                             }
                         }
                     }
@@ -799,12 +827,18 @@ Item {
                         RowLayout {
                             anchors.centerIn: parent
                             spacing: ScreenTools.defaultFontPixelWidth * 0.5
-                            QGCLabel { text: "🧭"; font.pointSize: ScreenTools.smallFontPointSize }
-                            QGCLabel { text: qsTr("Calibrate"); font.bold: true; font.pointSize: ScreenTools.smallFontPointSize * 0.85; color: root.cTextPrimary }
+                            QGCLabel { text: root.isAdmin ? "🧭" : "🔒"; font.pointSize: ScreenTools.smallFontPointSize }
+                            QGCLabel { text: root.isAdmin ? qsTr("Calibrate") : qsTr("Calibrate (Admin)"); font.bold: true; font.pointSize: ScreenTools.smallFontPointSize * 0.85; color: root.cTextPrimary }
                         }
                         MouseArea {
                             anchors.fill: parent
-                            onClicked: root.openVehicleConfig()
+                            onClicked: {
+                                if (root.isAdmin) {
+                                    root.openVehicleConfig()
+                                } else {
+                                    root.showAccessRestricted(qsTr("Vehicle Calibration & Setup"))
+                                }
+                            }
                         }
                     }
 
@@ -819,12 +853,18 @@ Item {
                         RowLayout {
                             anchors.centerIn: parent
                             spacing: ScreenTools.defaultFontPixelWidth * 0.5
-                            QGCLabel { text: "📋"; font.pointSize: ScreenTools.smallFontPointSize }
-                            QGCLabel { text: qsTr("Logs"); font.bold: true; font.pointSize: ScreenTools.smallFontPointSize * 0.85; color: root.cTextPrimary }
+                            QGCLabel { text: root.isAdmin ? "📋" : "🔒"; font.pointSize: ScreenTools.smallFontPointSize }
+                            QGCLabel { text: root.isAdmin ? qsTr("Logs") : qsTr("Logs (Admin)"); font.bold: true; font.pointSize: ScreenTools.smallFontPointSize * 0.85; color: root.cTextPrimary }
                         }
                         MouseArea {
                             anchors.fill: parent
-                            onClicked: root.openAnalyzeView()
+                            onClicked: {
+                                if (root.isAdmin) {
+                                    root.openAnalyzeView()
+                                } else {
+                                    root.showAccessRestricted(qsTr("Flight Logs & Analyze Tools"))
+                                }
+                            }
                         }
                     }
                 }
@@ -1458,64 +1498,28 @@ Item {
                     }
                 }
 
-                RowLayout {
+                Rectangle {
                     Layout.fillWidth: true
-                    spacing: ScreenTools.defaultFontPixelWidth
+                    Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 2.4
+                    radius: ScreenTools.defaultFontPixelHeight * 0.5
+                    color: logoutMouse.containsMouse ? "#DC2626" : "#EF4444"
 
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 2.4
-                        radius: ScreenTools.defaultFontPixelHeight * 0.5
-                        color: switchMouse.containsMouse ? (root.isDarkTheme ? "#334155" : "#E2E8F0") : (root.isDarkTheme ? "#1E293B" : "#F1F5F9")
-                        border.color: root.isDarkTheme ? "#475569" : "#CBD5E1"
-                        border.width: 1
-
-                        QGCLabel {
-                            anchors.centerIn: parent
-                            text: qsTr("🔄 Switch Role")
-                            font.bold: true
-                            font.pointSize: ScreenTools.smallFontPointSize * 0.9
-                            color: root.cTextPrimary
-                        }
-
-                        MouseArea {
-                            id: switchMouse
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            hoverEnabled: true
-                            onClicked: {
-                                if (root.activeUserRole === "Administrator") {
-                                    root.activeUserRole = "Drone Pilot"
-                                } else {
-                                    root.activeUserRole = "Administrator"
-                                }
-                            }
-                        }
+                    QGCLabel {
+                        anchors.centerIn: parent
+                        text: qsTr("🚪 Log Out")
+                        font.bold: true
+                        font.pointSize: ScreenTools.smallFontPointSize * 0.95
+                        color: "#FFFFFF"
                     }
 
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 2.4
-                        radius: ScreenTools.defaultFontPixelHeight * 0.5
-                        color: logoutMouse.containsMouse ? "#DC2626" : "#EF4444"
-
-                        QGCLabel {
-                            anchors.centerIn: parent
-                            text: qsTr("🚪 Log Out")
-                            font.bold: true
-                            font.pointSize: ScreenTools.smallFontPointSize * 0.9
-                            color: "#FFFFFF"
-                        }
-
-                        MouseArea {
-                            id: logoutMouse
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            hoverEnabled: true
-                            onClicked: {
-                                root.showProfileDialog = false
-                                root.logoutRequested()
-                            }
+                    MouseArea {
+                        id: logoutMouse
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        hoverEnabled: true
+                        onClicked: {
+                            root.showProfileDialog = false
+                            root.logoutRequested()
                         }
                     }
                 }
