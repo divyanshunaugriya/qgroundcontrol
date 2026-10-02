@@ -80,7 +80,7 @@ Item {
                             Layout.fillHeight:  true
                             icon.source:        "/res/QGCLogoFull.svg"
                             logo:               true
-                            onClicked:          mainWindow.showToolSelectDialog()
+                            onClicked:          mainWindow.showHubPage()
                         }
 
                         MainStatusIndicator {
@@ -141,7 +141,7 @@ Item {
 
             Item {
                 id:     rightPanel
-                width:  flyViewIndicators.width + (modelNameLabel.visible ? modelNameLabel.implicitWidth + ScreenTools.defaultFontPixelWidth * 3 : 0)
+                width:  flyViewIndicators.width + (modelNameLabel.visible ? modelNameLabel.implicitWidth + ScreenTools.defaultFontPixelWidth * 3 : 0) + settingsHamburgerButton.width + ScreenTools.defaultFontPixelWidth * 2
                 height: parent.height
 
                 Rectangle {
@@ -161,13 +161,54 @@ Item {
                     QGCLabel {
                         id:                     modelNameLabel
                         Layout.fillHeight:      true
-                        Layout.rightMargin:     ScreenTools.defaultFontPixelWidth * 2
+                        Layout.rightMargin:     ScreenTools.defaultFontPixelWidth
                         verticalAlignment:      Text.AlignVCenter
                         text:                   _activeVehicle ? (_activeVehicle.detectedModelName !== "" ? _activeVehicle.detectedModelName : _activeVehicle.vehicleTypeString) : ""
-                        color:                  "#000000"
+                        color:                  "#E2E8F0"
                         font.bold:              true
                         font.pointSize:         ScreenTools.defaultFontPointSize * 1.15
                         visible:                _activeVehicle && text !== ""
+                    }
+
+                    Rectangle {
+                        id:                     settingsHamburgerButton
+                        objectName:             "toolbar_settingsHamburgerButton"
+                        Layout.fillHeight:      true
+                        Layout.preferredWidth:  height * 0.85
+                        Layout.rightMargin:     ScreenTools.defaultFontPixelWidth
+                        color:                  settingsMouseArea.pressed ? Qt.rgba(1, 1, 1, 0.25) : (settingsMouseArea.containsMouse ? Qt.rgba(1, 1, 1, 0.12) : "transparent")
+                        radius:                 ScreenTools.defaultBorderRadius
+
+                        Column {
+                            anchors.centerIn:   parent
+                            spacing:            Math.max(3, Math.round(ScreenTools.defaultFontPixelHeight * 0.22))
+
+                            Rectangle {
+                                width:          Math.round(ScreenTools.defaultFontPixelWidth * 2.2)
+                                height:         Math.max(2, Math.round(ScreenTools.defaultFontPixelHeight * 0.12))
+                                radius:         height / 2
+                                color:          "#FFFFFF"
+                            }
+                            Rectangle {
+                                width:          Math.round(ScreenTools.defaultFontPixelWidth * 2.2)
+                                height:         Math.max(2, Math.round(ScreenTools.defaultFontPixelHeight * 0.12))
+                                radius:         height / 2
+                                color:          "#FFFFFF"
+                            }
+                            Rectangle {
+                                width:          Math.round(ScreenTools.defaultFontPixelWidth * 2.2)
+                                height:         Math.max(2, Math.round(ScreenTools.defaultFontPixelHeight * 0.12))
+                                radius:         height / 2
+                                color:          "#FFFFFF"
+                            }
+                        }
+
+                        QGCMouseArea {
+                            id:                 settingsMouseArea
+                            anchors.fill:       parent
+                            cursorShape:        Qt.PointingHandCursor
+                            onClicked:          mainWindow.showSettingsTool()
+                        }
                     }
                 }
             }

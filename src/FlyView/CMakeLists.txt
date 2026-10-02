@@ -79,6 +79,7 @@ qt_add_qml_module(FlyViewModule
         UniGcsCenterSight.qml
         DjiFlightHud.qml
         DjiActionButtons.qml
+        UniGcsFlightOsdBar.qml
         SiyiMissionBar.qml
         SiyiAttitudeCompass.qml
         SiyiSettingsDrawer.qml
