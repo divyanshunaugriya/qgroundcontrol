@@ -59,6 +59,7 @@ Item {
         anchors.top:            parent.top
         anchors.right:          parent.right
         maximumHeight:          parent.height - (bottomRightRowLayout.height + _margins * 4)
+        visible:                false
 
         property real topEdgeRightInset:    height + _layoutMargin
         property real rightEdgeTopInset:    width + _layoutMargin
@@ -70,7 +71,7 @@ Item {
         anchors.top:        parent.top
         anchors.right:      parent.right
         spacing:            _layoutSpacing
-        visible:           !topRightPanel.visible
+        visible:            false
 
         property real topEdgeRightInset:    childrenRect.height + _layoutMargin
         property real rightEdgeTopInset:    width + _layoutMargin
@@ -82,6 +83,7 @@ Item {
         anchors.bottom:     parent.bottom
         anchors.right:      parent.right
         spacing:            _layoutSpacing
+        visible:            false
 
         property real bottomEdgeRightInset:     height + _layoutMargin
         property real bottomEdgeCenterInset:    bottomEdgeRightInset
@@ -153,7 +155,7 @@ Item {
         anchors.top:            parent.top
         z:                      QGroundControl.zOrderWidgets
         maxHeight:              parent.height - y - parentToolInsets.bottomEdgeLeftInset - _toolsMargin
-        visible:                !QGroundControl.videoManager.fullScreen
+        visible:                false
 
         onDisplayPreFlightChecklist: {
             if (!preFlightChecklistLoader.active) {

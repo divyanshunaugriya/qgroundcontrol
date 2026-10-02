@@ -21,6 +21,7 @@ Item {
     property var parentToolInsets               // These insets tell you what screen real estate is available for positioning the controls in your overlay
     property var totalToolInsets:   _toolInsets // These are the insets for your custom overlay additions
     property var mapControl
+    property var pipView: null
 
     // since this file is a placeholder for the custom layer in a standard build, we will just pass through the parent insets
     QGCToolInsets {
@@ -37,6 +38,15 @@ Item {
         bottomEdgeLeftInset:    parentToolInsets.bottomEdgeLeftInset
         bottomEdgeCenterInset:  parentToolInsets.bottomEdgeCenterInset
         bottomEdgeRightInset:   parentToolInsets.bottomEdgeRightInset
+    }
+
+    // Built-in Tactical Surveillance & Reconnaissance Cockpit Overlay
+    TacticalSurveillanceOverlay {
+        id: tacticalSurveillanceOverlay
+        anchors.fill: parent
+        mapControl: _root.mapControl
+        pipView: _root.pipView
+        visible: dynamicLoader.status !== Loader.Ready
     }
 
     // Dynamic Hot-Reload Live Overlay Loader

@@ -1,11 +1,11 @@
 {
-  "versionCode": 8,
-  "versionName": "1.0.7",
-  "releaseDate": "2026-09-30",
+  "versionCode": 14,
+  "versionName": "1.1.3",
+  "releaseDate": "2026-10-02",
   "minSupportedVersion": 1,
-  "apkUrl": "https://github.com/divyanshunaugriya/IRS_ALEX_GCS_CUSTOM/releases/download/v1.0.7/IRS_Alex_GCS_signed.apk",
-  "assetApiUrl": "https://api.github.com/repos/divyanshunaugriya/IRS_ALEX_GCS_CUSTOM/releases/assets/601252611",
-  "title": "IRS GCS Software Update Available",
-  "releaseNotes": "\u2022 \ud83d\udd10 Cryptographic MAVLink 2 Signing: Hardcoded Nextkick 256-bit Master Key auto-provisioning for tamper-proof wireless link with IRS PAWAN.\n\u2022 \ud83d\udef8 Dual Aircraft Architecture: Streamlined Hub displaying strictly IRS PAWAN and IRS VAYU.\n\u2022 \u2728 Zero-Box Floating Visuals: High-definition transparent aircraft models with soft dynamic drop-shadows.\n\u2022 \u26a1 1-Tap Connection Sheets: Skydroid T10 Bluetooth Scanner & Connect sheet for PAWAN; SIYI MK15 (UDP 14550) & Skydroid G12 (Serial 57600) sheet for VAYU.\n\u2022 \ud83d\udee1\ufe0f DGCA UAS Security Compliance: Operator station HWID credentials and crypto-session status indicators.",
+  "apkUrl": "https://github.com/divyanshunaugriya/IRS_ALEX_GCS_CUSTOM/releases/download/v1.1.3/IRS_Alex_GCS_signed.apk",
+  "assetApiUrl": "https://api.github.com/repos/divyanshunaugriya/IRS_ALEX_GCS_CUSTOM/releases/assets/605413326",
+  "title": "IRS Tactical Surveillance & ISR Cockpit Update Available",
+  "releaseNotes": "\u2022 \ud83d\udee1\ufe0f Pure Tactical Surveillance Cockpit: Video-first reconnaissance HUD replacing all agricultural spray controls.\n\u2022 \ud83e\udd16 AI Target Bounding Box & Reticle: Real-time classification and tracking.\n\u2022 \ud83d\udd0d Dedicated Optical Zoom Ladder: 1x, 2x, 5x, 10x, 20x, 50x, 100x instant selectors.\n\u2022 \ud83c\udf21\ufe0f Thermal Infrared Palette: 1-tap toggling between Optical RGB, Ironbow, and White-Hot.\n\u2022 \u26a1 Laser Rangefinder (LRF): Ground target GPS coordinates & distance telemetry.\n\u2022 \ud83d\udd04 Autonomous Orbit POI: Standoff circular target tracking.\n\u2022 \ud83d\udca1 Covert Stealth Mode: Blackout navigation lights for silent night ISR operations.\n\u2022 \ud83d\uddfa\ufe0f 1-Tap Map & Video Swap: Instantly switch between live payload and tactical radar.",
   "forceUpdate": false
 }

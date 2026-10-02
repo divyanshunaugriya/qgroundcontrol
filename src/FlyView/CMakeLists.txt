@@ -83,6 +83,7 @@ qt_add_qml_module(FlyViewModule
         SiyiMissionBar.qml
         SiyiAttitudeCompass.qml
         SiyiSettingsDrawer.qml
+        TacticalSurveillanceOverlay.qml
     NO_PLUGIN
 )
 
