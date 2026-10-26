@@ -4,7 +4,7 @@
   "releaseDate": "2026-10-26",
   "minSupportedVersion": 1,
   "apkUrl": "https://github.com/divyanshunaugriya/IRS_ALEX_GCS_CUSTOM/releases/download/v1.1.4/IRS_Alex_GCS_signed.apk",
-  "assetApiUrl": "https://api.github.com/repos/divyanshunaugriya/IRS_ALEX_GCS_CUSTOM/releases/assets/605413326",
+  "assetApiUrl": "https://api.github.com/repos/divyanshunaugriya/IRS_ALEX_GCS_CUSTOM/releases/assets/677927863",
   "title": "IRS GCS Enterprise Standard Edition (v1.1.4)",
   "releaseNotes": "• Standard High-Performance FlyView: Reverted and locked to standard QGroundControl flight cockpit with complete telemetry gauges, flight tools, and guided actions.\n• Core Stability: Optimized rendering pipeline and telemetry synchronization.\n• Dual Platform Release: Synchronized builds for Windows Desktop and Android Mobile controllers.",
   "forceUpdate": false
