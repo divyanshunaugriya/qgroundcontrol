@@ -76,13 +76,6 @@ qt_add_qml_module(FlyViewModule
         VehicleWarnings.qml
         VirtualJoystick.qml
         VTOLChecklist.qml
-        UniGcsCenterSight.qml
-        DjiFlightHud.qml
-        DjiActionButtons.qml
-        UniGcsFlightOsdBar.qml
-        SiyiMissionBar.qml
-        SiyiAttitudeCompass.qml
-        SiyiSettingsDrawer.qml
     NO_PLUGIN
 )
 
