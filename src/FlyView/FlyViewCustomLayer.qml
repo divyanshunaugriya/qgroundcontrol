@@ -21,7 +21,6 @@ Item {
     property var parentToolInsets               // These insets tell you what screen real estate is available for positioning the controls in your overlay
     property var totalToolInsets:   _toolInsets // These are the insets for your custom overlay additions
     property var mapControl
-    property var pipView: null
 
     // since this file is a placeholder for the custom layer in a standard build, we will just pass through the parent insets
     QGCToolInsets {
@@ -39,67 +38,4 @@ Item {
         bottomEdgeCenterInset:  parentToolInsets.bottomEdgeCenterInset
         bottomEdgeRightInset:   parentToolInsets.bottomEdgeRightInset
     }
-
-    // Built-in Tactical Surveillance & Reconnaissance Cockpit Overlay
-    TacticalSurveillanceOverlay {
-        id: tacticalSurveillanceOverlay
-        anchors.fill: parent
-        mapControl: _root.mapControl
-        pipView: _root.pipView
-        visible: dynamicLoader.status !== Loader.Ready
-    }
-
-    // Dynamic Hot-Reload Live Overlay Loader
-    Item {
-        id: dynamicLiveUiContainer
-        anchors.fill: parent
-
-        readonly property string uiDir: "/sdcard/Android/data/com.irs.irsgcs/files/live_ui/"
-        property bool useSlotB: false
-
-        Loader {
-            id: dynamicLoader
-            anchors.fill: parent
-            asynchronous: false
-
-            function reload() {
-                useSlotB = !useSlotB
-                var target = "file://" + uiDir + (useSlotB ? "LiveFlyOverlay_B.qml" : "LiveFlyOverlay_A.qml")
-                dynamicLoader.source = ""
-                dynamicLoader.source = target
-            }
-        }
-
-        // Tap-to-reload discrete pill in top-right corner
-        Rectangle {
-            width: 24
-            height: 24
-            radius: 12
-            color: dynamicLoader.status === Loader.Ready ? "#3300E676" : "#22FFFFFF"
-            border.color: "#44FFFFFF"
-            border.width: 1
-            anchors.top: parent.top
-            anchors.right: parent.right
-            anchors.margins: 6
-            opacity: 0.4
-            z: 9999
-
-            Text {
-                anchors.centerIn: parent
-                text: "⚡"
-                font.pixelSize: 12
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                onClicked: dynamicLoader.reload()
-            }
-        }
-
-        Component.onCompleted: {
-            var target = "file://" + uiDir + "LiveFlyOverlay_A.qml"
-            dynamicLoader.source = target
-        }
-    }
-    // standard placeholder custom overlay
 }

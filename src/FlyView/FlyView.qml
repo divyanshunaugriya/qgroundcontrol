@@ -159,7 +159,6 @@ Item {
             z:                  _fullItemZorder + 2
             parentToolInsets:   widgetLayer.totalToolInsets
             mapControl:         _mapControl
-            pipView:            _pipView
             visible:            !QGroundControl.videoManager.fullScreen
         }
 

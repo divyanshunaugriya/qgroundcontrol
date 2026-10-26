@@ -30,8 +30,8 @@ Item {
     // =========================================================================
     // IN-APP AUTO-UPDATE CONFIGURATION & STATE
     // =========================================================================
-    readonly property int currentAppVersionCode: 11
-    readonly property string currentAppVersionName: "1.1.0"
+    readonly property int currentAppVersionCode: 15
+    readonly property string currentAppVersionName: "1.1.4"
 
     property bool isUpdateAvailable: false
     property var updateInfo: ({
